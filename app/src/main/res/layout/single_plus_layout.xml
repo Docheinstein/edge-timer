@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/colorBackground">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+        <TextView
+                android:id="@+id/timerText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="36dp"
+                android:fontFamily="sans-serif-light"
+                android:text="@string/timer_default_text"
+                android:textAlignment="center"
+                android:textColor="@color/colorTextLight"
+                android:textSize="@dimen/timer_text_size"
+                tools:text="00:00:00" />
+
+    </LinearLayout>
+
+    <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorTextLight" />
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorBackgroundLighter"
+            android:gravity="bottom"
+            android:orientation="vertical"
+            android:paddingTop="18dp"
+            android:paddingBottom="18dp">
+
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical">
+
+            <Button
+                    android:id="@+id/resetButton"
+                    style="@style/Widget.AppCompat.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/stop_button"
+                    android:fontFamily="sans-serif-light"
+                    android:text="@string/reset_timer"
+                    android:textColor="@color/colorTextLight"
+                    android:textSize="@dimen/button_text_size"
+                    android:visibility="visible" />
+
+            <Button
+                    android:id="@+id/pauseButton"
+                    style="@style/Widget.AppCompat.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/pause_button"
+                    android:fontFamily="sans-serif-light"
+                    android:text="@string/pause_timer"
+                    android:textColor="@color/colorTextLight"
+                    android:textSize="@dimen/button_text_size" />
+        </LinearLayout>
+
+        <Button
+                android:id="@+id/startButton"
+                style="@style/Widget.AppCompat.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/start_button"
+                android:fontFamily="sans-serif-light"
+                android:text="@string/start_timer"
+                android:textColor="@color/colorTextLight"
+                android:textSize="@dimen/button_text_size" />
+    </LinearLayout>
+</LinearLayout>
