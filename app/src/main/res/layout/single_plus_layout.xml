@@ -24,7 +24,7 @@
                 android:textAlignment="center"
                 android:textColor="@color/colorTextLight"
                 android:textSize="@dimen/timer_text_size"
-                tools:text="00:00:00" />
+                tools:text="00:00.00" />
 
     </LinearLayout>
 

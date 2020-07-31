@@ -22,6 +22,8 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
 
     private static final String TAG = "SinglePlusProvider";
 
+    private static final String DEFAULT_DISPLAY_TIME = "00.00";
+
     private static final String ACTION_START_TIMER = "org.docheinstein.edgetimer.ACTION_START_TIMER";
     private static final String ACTION_PAUSE_TIMER = "org.docheinstein.edgetimer.ACTION_PAUSE_TIMER";
     private static final String ACTION_RESUME_TIMER = "org.docheinstein.edgetimer.ACTION_RESUME_TIMER";
@@ -36,27 +38,28 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
     private static final String EXTRA_COCKTAIL_VISIBILITY = "cocktailVisibility";
 
-    private static RemoteViews mView;
-    private static RemoteViews mHelperView;
-    private static Stopwatch mStopwatch;
-    private static TimerTask mStopwatchTask;
+    private static int sCocktailId;
+    private static RemoteViews sView;
+    private static RemoteViews sHelperView;
+    private static Stopwatch sStopwatch;
+    private static TimerTask sStopwatchTask;
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
         String action = intent.getAction();
 
         if (action == null) {
-            Log.e(TAG, "Null action?");
+            error(context, "Null action?");
             return;
         }
 
-        Log.i(TAG, action);
+        debug(context, action);
 
 
         Bundle extras = intent.getExtras();
 
         if (extras == null) {
-            Log.e(TAG, "Null extras?");
+            warn(context, "Null extras? Not handling action");
             return;
         }
 
@@ -72,164 +75,226 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
             int[] cocktailIds = extras.getIntArray(EXTRA_COCKTAIL_IDS);
 
             if (cocktailIds == null || cocktailIds.length < 1) {
-                Log.e(TAG, "Unexpected cocktailIds extra");
+                error(context, "Unexpected cocktailIds extra");
                 return;
             }
 
             cocktailId = cocktailIds[0];
         }
         else {
-            Log.e(TAG, "No cocktailId");
+            error(context, "No cocktailId");
             return;
         }
 
-        Log.d(TAG, "Acting on stopwatch [" + (mStopwatch != null ? mStopwatch.hashCode() : "<null>") + "]");
+        debug(context, "Acting on stopwatch [" + (sStopwatch != null ? sStopwatch.hashCode() : "<null>") + "]");
 
         switch (action) {
             case ACTION_START_TIMER:
-                onStartTimer(context, cocktailId);
+                onStartTimer(context);
                 break;
             case ACTION_PAUSE_TIMER:
-                onPauseTimer(context, cocktailId);
+                onPauseTimer(context);
                 break;
             case ACTION_RESUME_TIMER:
-                onResumeTimer(context, cocktailId);
+                onResumeTimer(context);
                 break;
             case ACTION_RESET_TIMER:
-                onResetTimer(context, cocktailId);
+                onResetTimer(context);
                 break;
             case ACTION_COCKTAIL_UPDATE_V2:
                 onCocktailUpdate(context, cocktailId);
                 break;
             default:
-                Log.w(TAG, "Unknown action received");
+                warn(context, "Unknown action received");
                 break;
         }
     }
 
-    private void onStartTimer(final Context context, final int cocktailId) {
-        doStartTimer(context, cocktailId);
-        updateButtonsUI();
-        invalidatePanel(context, cocktailId);
+    private void onStartTimer(final Context context) {
+        doStartTimer(context);
+        updateButtonsUI(context);
+        invalidatePanel(context);
     }
 
-    private void onResumeTimer(final Context context, final int cocktailId) {
-        doStartTimer(context, cocktailId);
-        updateButtonsUI();
-        invalidatePanel(context, cocktailId);
+    private void onResumeTimer(final Context context) {
+        doStartTimer(context);
+        updateButtonsUI(context);
+        invalidatePanel(context);
     }
 
-    private void doStartTimer(final Context context, final int cocktailId) {
-        if (mStopwatch == null) {
-            mStopwatch = new Stopwatch();
+    private void doStartTimer(final Context context) {
+        if (sStopwatch == null) {
+            sStopwatch = new Stopwatch();
         }
 
-        mStopwatch.start();
+        sStopwatch.start();
 
-        if (mStopwatchTask == null) {
-            mStopwatchTask = new TimerTask() {
+        if (sStopwatchTask == null) {
+            sStopwatchTask = new TimerTask() {
                 @Override
                 public void run() {
-                    updateDisplayTimeUI();
-                    invalidatePanel(context, cocktailId);
+                    updateDisplayTimeUI(context);
+                    invalidatePanel(context);
                 }
             };
 
-            new Timer().scheduleAtFixedRate(mStopwatchTask, 0, 8);
+            new Timer().scheduleAtFixedRate(sStopwatchTask, 0, 7);
         }
     }
 
-    private void onPauseTimer(final Context context, final int cocktailId) {
-        if (mStopwatch != null) {
-            mStopwatch.pause();
+    private void onPauseTimer(final Context context) {
+        if (sStopwatch != null) {
+            sStopwatch.pause();
         }
 
-        if (mStopwatchTask != null) {
-            mStopwatchTask.cancel();
-            mStopwatchTask = null;
+        if (sStopwatchTask != null) {
+            sStopwatchTask.cancel();
+            sStopwatchTask = null;
         }
 
-        updateButtonsUI();
-        invalidatePanel(context, cocktailId);
+        updateButtonsUI(context);
+        invalidatePanel(context);
     }
 
-    private void onResetTimer(final Context context, final int cocktailId) {
-        if (mStopwatch != null) {
-            mStopwatch.reset();
+    private void onResetTimer(final Context context) {
+        if (sStopwatch != null) {
+            sStopwatch.reset();
         }
 
-        if (mStopwatchTask != null && mStopwatch != null && !mStopwatch.isRunning()) {
-            mStopwatchTask.cancel();
-            mStopwatchTask = null;
+        if (sStopwatchTask != null && sStopwatch != null && !sStopwatch.isRunning()) {
+            sStopwatchTask.cancel();
+            sStopwatchTask = null;
         }
 
-        updateButtonsUI();
-        updateDisplayTimeUI();
-        invalidatePanel(context, cocktailId);
+        updateButtonsUI(context);
+        updateDisplayTimeUI(context);
+        invalidatePanel(context);
     }
 
-    private void updateButtonsUI() {
-        if (mStopwatch == null) {
-            Log.w(TAG, "Null stopwatch?");
+    private void updateButtonsUI(Context context) {
+        if (sView == null) {
+            error(context, "updateButtonsUI: Invalid sView");
             return;
         }
 
-        switch (mStopwatch.getState()) {
+        Stopwatch.State state;
+
+        if (sStopwatch != null) {
+            state = sStopwatch.getState();
+        }
+        else {
+            warn(context, "Null stopwatch?");
+            state = Stopwatch.State.None;
+        }
+
+        switch (state) {
             case None:
-                mView.setViewVisibility(R.id.notRunningButtons, View.VISIBLE);
-                mView.setViewVisibility(R.id.runningButtons, View.GONE);
-                mView.setViewVisibility(R.id.pausedButtons, View.GONE);
+                sView.setViewVisibility(R.id.notRunningButtons, View.VISIBLE);
+                sView.setViewVisibility(R.id.runningButtons, View.GONE);
+                sView.setViewVisibility(R.id.pausedButtons, View.GONE);
                 break;
             case Running:
-                mView.setViewVisibility(R.id.notRunningButtons, View.GONE);
-                mView.setViewVisibility(R.id.runningButtons, View.VISIBLE);
-                mView.setViewVisibility(R.id.pausedButtons, View.GONE);
+                sView.setViewVisibility(R.id.notRunningButtons, View.GONE);
+                sView.setViewVisibility(R.id.runningButtons, View.VISIBLE);
+                sView.setViewVisibility(R.id.pausedButtons, View.GONE);
                 break;
             case Paused:
-                mView.setViewVisibility(R.id.notRunningButtons, View.GONE);
-                mView.setViewVisibility(R.id.runningButtons, View.GONE);
-                mView.setViewVisibility(R.id.pausedButtons, View.VISIBLE);
+                sView.setViewVisibility(R.id.notRunningButtons, View.GONE);
+                sView.setViewVisibility(R.id.runningButtons, View.GONE);
+                sView.setViewVisibility(R.id.pausedButtons, View.VISIBLE);
                 break;
         }
     }
 
-    private void updateDisplayTimeUI() {
-        String displayTime = TimeUtils.millisToDisplayTime(mStopwatch.elapsed());
-        mView.setTextViewText(R.id.timerText, displayTime);
+    private void updateDisplayTimeUI(Context context) {
+        if (sView == null) {
+            error(context, "updateDisplayTimeUI: Invalid sView");
+            return;
+        }
+
+        String displayTime =
+                sStopwatch != null ?
+                        TimeUtils.millisToDisplayTime(sStopwatch.elapsed()) :
+                        DEFAULT_DISPLAY_TIME;
+        sView.setTextViewText(R.id.timerText, displayTime);
     }
 
-    private void invalidatePanel(Context context, int cocktailId) {
-        SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, mView, mHelperView);
+    private void invalidatePanel(Context context) {
+        if (sView == null) {
+            error(context, "invalidatePanel: Invalid sView");
+            return;
+        }
+
+        SlookCocktailManager.getInstance(context).updateCocktail(sCocktailId, sView, sHelperView);
     }
 
     private void onCocktailUpdate(Context context, int cocktailId) {
-        if (mView == null) {
-            Log.d(TAG, "Creating single_plus_layout");
-            mView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout);
+        debug(context, "[" + cocktailId + "] COCKTAIL UPDATE");
 
-            setViewAction(context, cocktailId, R.id.startButton, ACTION_START_TIMER);
-            setViewAction(context, cocktailId, R.id.pauseButton, ACTION_PAUSE_TIMER);
-            setViewAction(context, cocktailId, R.id.resumeButton, ACTION_RESUME_TIMER);
-            setViewAction(context, cocktailId, R.id.resetButton, ACTION_RESET_TIMER);
-            setViewAction(context, cocktailId, R.id.resetButton2, ACTION_RESET_TIMER);
+        if (cocktailId != sCocktailId) {
+            if (sStopwatch != null)
+                sStopwatch = null;
+
+            if (sStopwatchTask != null) {
+                sStopwatchTask.cancel();
+                sStopwatchTask = null;
+            }
+
+            debug(context, "Creating single_plus_layout");
+            sView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout);
+
+            setViewAction(context, R.id.startButton, ACTION_START_TIMER);
+            setViewAction(context, R.id.pauseButton, ACTION_PAUSE_TIMER);
+            setViewAction(context, R.id.resumeButton, ACTION_RESUME_TIMER);
+            setViewAction(context, R.id.resetButton, ACTION_RESET_TIMER);
+            setViewAction(context, R.id.resetButton2, ACTION_RESET_TIMER);
+
+            debug(context, "Creating single_plus_layout_helper");
+            sHelperView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout_helper);
+
+            sCocktailId = cocktailId;
         }
 
-        if (mHelperView == null) {
-            Log.d(TAG, "Creating single_plus_layout_helper");
-            mHelperView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout_helper);
-        }
-
-        invalidatePanel(context, cocktailId);
+        invalidatePanel(context);
     }
 
-    private void setViewAction(Context context, int cocktailId, int viewId, String action) {
+    private void setViewAction(Context context, int viewId, String action) {
         Intent clickIntent = new Intent(context, CocktailSinglePlusProvider.class);
         clickIntent.setAction(action);
-        clickIntent.putExtra(EXTRA_COCKTAIL_ID, cocktailId);
+        clickIntent.putExtra(EXTRA_COCKTAIL_ID, sCocktailId);
 
         PendingIntent clickPendingIntent = PendingIntent.getBroadcast(
                 context, 0, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mView.setOnClickPendingIntent(viewId, clickPendingIntent);
+        sView.setOnClickPendingIntent(viewId, clickPendingIntent);
+    }
+    
+//    private static String sLogs;
+    
+    private void debug(Context context, String s) {
+        Log.d(TAG, "[D] " + s);
+//        if (sHelperView != null) {
+//            sLogs += "[D] " + s + "\n";
+//            sHelperView.setTextViewText(R.id.console, sLogs);
+//            invalidatePanel(context);
+//        }
+    }
+    
+    private void error(Context context, String s) {
+        Log.e(TAG, "[E] " + s);
+//        if (sHelperView != null) {
+//            sLogs += "[E] " + s + "\n";
+//            sHelperView.setTextViewText(R.id.console, sLogs);
+//            invalidatePanel(context);
+//        }
+    }
+    
+    private void warn(Context context, String s) {
+        Log.w(TAG, "[W] " + s);
+//        if (sHelperView != null) {
+//            sLogs += "[W] " + s + "\n";
+//            sHelperView.setTextViewText(R.id.console, sLogs);
+//            invalidatePanel(context);
+//        }
     }
 }
