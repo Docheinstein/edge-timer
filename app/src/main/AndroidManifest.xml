@@ -31,7 +31,9 @@
                 <intent-filter>
                     <action android:name="com.samsung.android.cocktail.v2.action.COCKTAIL_UPDATE" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_START_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_STOP_TIMER" />
+                    <action android:name="org.docheinstein.edgetimer.ACTION_PAUSE_TIMER" />
+                    <action android:name="org.docheinstein.edgetimer.ACTION_RESUME_TIMER" />
+                    <action android:name="org.docheinstein.edgetimer.ACTION_RESET_TIMER" />
                 </intent-filter>
 
                 <meta-data
