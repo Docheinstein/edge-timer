@@ -1,7 +1,5 @@
 package org.docheinstein.edgetimer;
 
-import android.util.Log;
-
 public class Stopwatch {
 
     public enum State {

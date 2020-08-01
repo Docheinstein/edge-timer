@@ -20,7 +20,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="36dp"
                 android:fontFamily="sans-serif-light"
-                android:text="@string/timer_default_text"
+                android:text="@string/default_display_time"
                 android:textAlignment="center"
                 android:textColor="@color/colorTextLight"
                 android:textSize="@dimen/timer_text_size"
@@ -55,30 +55,31 @@
                 tools:visibility="visible">
 
             <Button
-                    android:id="@+id/resetButton"
+                    android:id="@+id/lapButton"
                     style="@style/Widget.AppCompat.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="12dp"
-                    android:background="@drawable/stop_button"
+                    android:background="@drawable/pause_button"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/reset_timer"
+                    android:text="@string/lap_timer"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size"
-                    android:visibility="visible" />
+                    android:textSize="@dimen/button_text_size" />
 
             <Button
-                    android:id="@+id/pauseButton"
+                    android:id="@+id/stopButton"
                     style="@style/Widget.AppCompat.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:background="@drawable/pause_button"
+                    android:background="@drawable/stop_button"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/pause_timer"
+                    android:text="@string/stop_timer"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size" />
+                    android:textSize="@dimen/button_text_size"
+                    android:visibility="visible" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -109,12 +110,24 @@
                 tools:visibility="visible">
 
             <Button
-                    android:id="@+id/resetButton2"
+                    android:id="@+id/resumeButton"
                     style="@style/Widget.AppCompat.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="12dp"
+                    android:background="@drawable/start_button"
+                    android:fontFamily="sans-serif-light"
+                    android:text="@string/resume_timer"
+                    android:textColor="@color/colorTextLight"
+                    android:textSize="@dimen/button_text_size" />
+
+            <Button
+                    android:id="@+id/resetButton"
+                    style="@style/Widget.AppCompat.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
                     android:background="@drawable/stop_button"
                     android:fontFamily="sans-serif-light"
                     android:text="@string/reset_timer"
@@ -122,17 +135,6 @@
                     android:textSize="@dimen/button_text_size"
                     android:visibility="visible" />
 
-            <Button
-                    android:id="@+id/resumeButton"
-                    style="@style/Widget.AppCompat.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/start_button"
-                    android:fontFamily="sans-serif-light"
-                    android:text="@string/resume_timer"
-                    android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size" />
         </LinearLayout>
 
     </LinearLayout>

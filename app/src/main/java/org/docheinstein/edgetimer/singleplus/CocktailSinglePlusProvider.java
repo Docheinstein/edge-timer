@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -25,9 +26,11 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
     private static final String DEFAULT_DISPLAY_TIME = "00.00";
 
     private static final String ACTION_START_TIMER = "org.docheinstein.edgetimer.ACTION_START_TIMER";
+    private static final String ACTION_LAP_TIMER = "org.docheinstein.edgetimer.ACTION_LAP_TIMER";
     private static final String ACTION_PAUSE_TIMER = "org.docheinstein.edgetimer.ACTION_PAUSE_TIMER";
     private static final String ACTION_RESUME_TIMER = "org.docheinstein.edgetimer.ACTION_RESUME_TIMER";
     private static final String ACTION_RESET_TIMER = "org.docheinstein.edgetimer.ACTION_RESET_TIMER";
+    private static final String ACTION_CLEAR_LAPS = "org.docheinstein.edgetimer.ACTION_CLEAR_LAPS";
 
     private static final String ACTION_COCKTAIL_ENABLED = "com.samsung.android.cocktail.action.COCKTAIL_ENABLED";
     private static final String ACTION_COCKTAIL_UPDATE = "com.samsung.android.cocktail.action.COCKTAIL_UPDATE";
@@ -92,6 +95,9 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
             case ACTION_START_TIMER:
                 onStartTimer(context);
                 break;
+            case ACTION_LAP_TIMER:
+                onLapTimer(context);
+                break;
             case ACTION_PAUSE_TIMER:
                 onPauseTimer(context);
                 break;
@@ -100,6 +106,9 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
                 break;
             case ACTION_RESET_TIMER:
                 onResetTimer(context);
+                break;
+            case ACTION_CLEAR_LAPS:
+                onClearLaps(context);
                 break;
             case ACTION_COCKTAIL_UPDATE_V2:
                 onCocktailUpdate(context, cocktailId);
@@ -142,6 +151,20 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         }
     }
 
+    private void onLapTimer(final Context context) {
+        if (sStopwatch == null)
+            return;
+
+        long elapsed = sStopwatch.elapsed();
+
+        debug(context, "LAP: " + elapsed + "ms");
+
+        CocktailSinglePlusLapsProvider.addLap(elapsed);
+
+        updateLapsUI(context);
+        invalidatePanelSwissKnife(context, R.id.lapsList);
+    }
+
     private void onPauseTimer(final Context context) {
         if (sStopwatch != null) {
             sStopwatch.pause();
@@ -169,6 +192,12 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         updateButtonsUI(context);
         updateDisplayTimeUI(context);
         invalidatePanel(context);
+    }
+
+    private void onClearLaps(Context context) {
+        CocktailSinglePlusLapsProvider.clearLaps();
+        updateLapsUI(context);
+        invalidatePanelSwissKnife(context, R.id.lapsList);
     }
 
     private void updateButtonsUI(Context context) {
@@ -206,6 +235,13 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         }
     }
 
+    private void updateLapsUI(Context context) {
+        sHelperView.setViewVisibility(
+                R.id.helperContainer,
+                CocktailSinglePlusLapsProvider.getCount() > 0 ? View.VISIBLE : View.GONE
+        );
+    }
+
     private void updateDisplayTimeUI(Context context) {
         if (sView == null) {
             error(context, "updateDisplayTimeUI: Invalid sView");
@@ -228,6 +264,18 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         SlookCocktailManager.getInstance(context).updateCocktail(sCocktailId, sView, sHelperView);
     }
 
+
+    private void invalidatePanelSwissKnife(Context context, int viewId) {
+        if (sView == null) {
+            error(context, "invalidatePanel: Invalid sView");
+            return;
+        }
+
+        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(sCocktailId, viewId);
+    }
+
+
+
     private void onCocktailUpdate(Context context, int cocktailId) {
         debug(context, "[" + cocktailId + "] COCKTAIL UPDATE");
 
@@ -242,15 +290,18 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
 
             debug(context, "Creating single_plus_layout");
             sView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout);
+            setViewAction(context, sView, R.id.startButton, ACTION_START_TIMER);
+            setViewAction(context, sView, R.id.lapButton, ACTION_LAP_TIMER);
+            setViewAction(context, sView, R.id.resumeButton, ACTION_RESUME_TIMER);
+            setViewAction(context, sView, R.id.stopButton, ACTION_PAUSE_TIMER);
+            setViewAction(context, sView, R.id.resetButton, ACTION_RESET_TIMER);
 
-            setViewAction(context, R.id.startButton, ACTION_START_TIMER);
-            setViewAction(context, R.id.pauseButton, ACTION_PAUSE_TIMER);
-            setViewAction(context, R.id.resumeButton, ACTION_RESUME_TIMER);
-            setViewAction(context, R.id.resetButton, ACTION_RESET_TIMER);
-            setViewAction(context, R.id.resetButton2, ACTION_RESET_TIMER);
+            debug(context, "Creating single_plus_helper_layout");
+            sHelperView = new RemoteViews(context.getPackageName(), R.layout.single_plus_helper_layout);
+            setViewAction(context, sHelperView, R.id.lapsClearButton, ACTION_CLEAR_LAPS);
 
-            debug(context, "Creating single_plus_layout_helper");
-            sHelperView = new RemoteViews(context.getPackageName(), R.layout.single_plus_layout_helper);
+            Intent intent = new Intent(context, CocktailSinglePlusLapsProvider.class);
+            sHelperView.setRemoteAdapter(R.id.lapsList, intent);
 
             sCocktailId = cocktailId;
         }
@@ -258,7 +309,7 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         invalidatePanel(context);
     }
 
-    private void setViewAction(Context context, int viewId, String action) {
+    private void setViewAction(Context context, RemoteViews remoteView, int viewId, String action) {
         Intent clickIntent = new Intent(context, CocktailSinglePlusProvider.class);
         clickIntent.setAction(action);
         clickIntent.putExtra(EXTRA_COCKTAIL_ID, sCocktailId);
@@ -266,7 +317,7 @@ public class CocktailSinglePlusProvider extends BroadcastReceiver {
         PendingIntent clickPendingIntent = PendingIntent.getBroadcast(
                 context, 0, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        sView.setOnClickPendingIntent(viewId, clickPendingIntent);
+        remoteView.setOnClickPendingIntent(viewId, clickPendingIntent);
     }
     
 //    private static String sLogs;

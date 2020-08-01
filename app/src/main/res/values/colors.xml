@@ -6,7 +6,7 @@
 
     <color name="colorPrimary">#085CC3</color>
     <color name="colorPrimaryDark">#17348A</color>
-    <color name="colorAccent">#39E6D2</color>
+    <color name="colorAccent">#358DFA</color>
 
     <color name="colorButtonBlue">@color/colorPrimary</color>
 

@@ -4,20 +4,13 @@
     <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />
 
     <application
-            android:allowBackup="true"
+            android:allowBackup="false"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:supportsRtl="true"
             android:theme="@style/AppTheme">
-            <activity
-                android:name=".MainActivity"
-                android:label="@string/app_name" >
-                <intent-filter>
-                    <action android:name="android.intent.action.MAIN" />
-                    <category android:name="android.intent.category.LAUNCHER" />
-                </intent-filter>
-            </activity>
+
+            <meta-data android:name="com.samsung.android.cocktail.mode" android:value="edge_single_plus"/>
 
             <activity
                 android:name=".EdgeConfigureActivity"
@@ -27,19 +20,26 @@
                 </intent-filter>
             </activity>
 
-            <receiver android:name=".singleplus.CocktailSinglePlusProvider" android:exported="true">
+
+            <receiver android:name=".singleplus.CocktailSinglePlusProvider">
                 <intent-filter>
                     <action android:name="com.samsung.android.cocktail.v2.action.COCKTAIL_UPDATE" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_START_TIMER" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_PAUSE_TIMER" />
+                    <action android:name="org.docheinstein.edgetimer.ACTION_LAP_TIMER" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_RESUME_TIMER" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_RESET_TIMER" />
+                    <action android:name="org.docheinstein.edgetimer.ACTION_CLEAR_LAPS" />
                 </intent-filter>
 
                 <meta-data
                     android:name="com.samsung.android.cocktail.provider"
                     android:resource="@xml/single_plus_conf" />
             </receiver>
+
+        <service
+            android:name=".singleplus.CocktailSinglePlusLapsProvider"
+            android:permission="android.permission.BIND_REMOTEVIEWS"/>
 
     </application>
 
