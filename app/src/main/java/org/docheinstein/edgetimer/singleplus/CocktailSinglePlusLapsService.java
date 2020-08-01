@@ -1,23 +1,22 @@
 package org.docheinstein.edgetimer.singleplus;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
 import org.docheinstein.edgetimer.BuildConfig;
 import org.docheinstein.edgetimer.R;
+import org.docheinstein.edgetimer.utils.StringUtils;
 import org.docheinstein.edgetimer.utils.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-public class CocktailSinglePlusLapsProvider extends RemoteViewsService {
-    private static final String TAG = CocktailSinglePlusLapsProvider.class.getSimpleName();
+public class CocktailSinglePlusLapsService extends RemoteViewsService {
+    private static final String TAG = CocktailSinglePlusLapsService.class.getSimpleName();
 
-    public static List<String> sLaps;
+    public static List<String> sLaps = new ArrayList<>();
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
@@ -25,7 +24,7 @@ public class CocktailSinglePlusLapsProvider extends RemoteViewsService {
     }
 
     public static void addLap(long time) {
-        String displayTime = TimeUtils.millisToDisplayTime(time);
+        String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds(true));
         Log.d(TAG, "Adding lap: " + displayTime);
         sLaps.add(displayTime);
     }
@@ -35,7 +34,7 @@ public class CocktailSinglePlusLapsProvider extends RemoteViewsService {
     }
 
     public static int getCount() {
-        return sLaps.size();
+        return sLaps != null ? sLaps.size() : 0;
     }
 
     public static class CocktailSinglePlusLapsViewFactory implements RemoteViewsService.RemoteViewsFactory {
@@ -81,7 +80,7 @@ public class CocktailSinglePlusLapsProvider extends RemoteViewsService {
 
             itemView.setTextViewText(R.id.lapItemText, sLaps.get(position));
             itemView.setTextViewText(R.id.lapItemPosition,
-                    String.format(Locale.getDefault(), "%d.", position + 1));
+                    StringUtils.format( "%d.", position + 1));
 
             return itemView;
         }

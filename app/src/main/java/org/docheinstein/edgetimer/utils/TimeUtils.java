@@ -1,14 +1,21 @@
 package org.docheinstein.edgetimer.utils;
 
-import java.util.Locale;
-
 public class TimeUtils {
-    public static String millisToDisplayTime(long millis) {
-        long m = millis / 60000;
-        long s = (millis % 60000) / 1000;
-        long ms = (millis % 1000) / 10;
-        if (m > 0)
-            return String.format(Locale.getDefault(), "%02d:%02d.%02d", m, s, ms);
-        return String.format(Locale.getDefault(), "%02d.%02d", s, ms);
+    public static class Timesnap {
+        public long minutes;
+        public long seconds;
+        public long millis;
+
+        public Timesnap(long time) {
+            minutes = time / 60000;
+            seconds = (time % 60000) / 1000;
+            millis = (time % 1000);
+        }
+
+        public String toMinutesSecondsCentiseconds(boolean hideMinutesIfZero) {
+            if (hideMinutesIfZero && minutes == 0)
+                return StringUtils.format("%02d.%02d", seconds, millis / 10);
+            return StringUtils.format("%02d:%02d.%02d", minutes, seconds, millis / 10);
+        }
     }
 }

@@ -4,5 +4,7 @@
     description="@string/edge_description"
     previewImage="@drawable/preview"
     cocktailWidth="550"
-    configure="org.docheinstein.edgetimer.EdgeConfigureActivity">
+    configure="org.docheinstein.edgetimer.config.EdgeConfigureActivity"
+    permitVisibilityChanged="true"
+>
 </cocktail-provider>

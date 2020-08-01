@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+            android:title="@string/pref_category_appearance">
+
+        <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="@string/pref_large_display_key"
+                android:summary="@string/pref_large_display_desc"
+                android:title="@string/pref_large_display_title" />
+
+        <ListPreference
+                android:entries="@array/pref_theme_items_keys"
+                android:entryValues="@array/pref_theme_items_values"
+                android:key="@string/pref_theme_key"
+                android:title="@string/pref_theme_title" />
+    </PreferenceCategory>
+</PreferenceScreen>

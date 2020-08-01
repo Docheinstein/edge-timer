@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorBackground">#272727</color>
-    <color name="colorBackgroundLighter">#353535</color>
+    <color name="colorDarkBackground">#272727</color>
+    <color name="colorDarkBackgroundLighter">#353535</color>
+
+    <color name="colorLightBackground">#C5C5C5</color>
+    <color name="colorLightBackgroundLighter">#E4E4E4</color>
 
 
-    <color name="colorPrimary">#085CC3</color>
-    <color name="colorPrimaryDark">#17348A</color>
-    <color name="colorAccent">#358DFA</color>
+    <color name="colorPrimary">#272727</color>
+    <color name="colorPrimaryDark">#191818</color>
+    <color name="colorAccent">#075FCC</color>
 
-    <color name="colorButtonBlue">@color/colorPrimary</color>
-
+    <color name="colorButtonBlue">#075FCC</color>
     <color name="colorButtonRed">#A3170C</color>
-
+    <color name="colorButtonOrange">#B86914</color>
     <color name="colorButtonGreen">#0A8A10</color>
 
+    <color name="colorTextDark">#272727</color>
     <color name="colorTextLight">#C5C5C5</color>
 </resources>
