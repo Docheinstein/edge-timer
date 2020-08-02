@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.singleplus;
+package org.docheinstein.edgetimer.edge;
 
 import android.content.Intent;
 import android.util.Log;
@@ -13,8 +13,8 @@ import org.docheinstein.edgetimer.utils.TimeUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CocktailSinglePlusLapsService extends RemoteViewsService {
-    private static final String TAG = CocktailSinglePlusLapsService.class.getSimpleName();
+public class EdgeSinglePlusLapsService extends RemoteViewsService {
+    private static final String TAG = EdgeSinglePlusLapsService.class.getSimpleName();
 
     public static List<String> sLaps = new ArrayList<>();
 

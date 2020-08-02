@@ -21,7 +21,7 @@
             </activity>
 
 
-            <receiver android:name=".singleplus.CocktailSinglePlusReceiver">
+            <receiver android:name=".edge.EdgeSinglePlusReceiver">
                 <intent-filter>
                     <action android:name="com.samsung.android.cocktail.v2.action.COCKTAIL_UPDATE" />
                     <action android:name="org.docheinstein.edgetimer.ACTION_START_TIMER" />
@@ -38,7 +38,7 @@
             </receiver>
 
         <service
-            android:name=".singleplus.CocktailSinglePlusLapsService"
+            android:name=".edge.EdgeSinglePlusLapsService"
             android:permission="android.permission.BIND_REMOTEVIEWS"/>
 
     </application>

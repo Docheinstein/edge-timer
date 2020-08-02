@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.singleplus;
+package org.docheinstein.edgetimer.edge;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -29,7 +29,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CocktailSinglePlusReceiver extends BroadcastReceiver implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = "SinglePlusProvider";
 
@@ -179,7 +179,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
 
         debug(context, "LAP: " + elapsed + "ms");
 
-        CocktailSinglePlusLapsService.addLap(elapsed);
+        EdgeSinglePlusLapsService.addLap(elapsed);
 
         updateLapsUI(context);
         invalidatePanelSwissKnife(context, R.id.lapsList);
@@ -212,7 +212,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
             sStopwatchTimer = null;
         }
 
-        CocktailSinglePlusLapsService.clearLaps();
+        EdgeSinglePlusLapsService.clearLaps();
 
         updateLapsUI(context);
         updateButtonsUI(context);
@@ -221,7 +221,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
     }
 
     private void onClearLaps(Context context) {
-        CocktailSinglePlusLapsService.clearLaps();
+        EdgeSinglePlusLapsService.clearLaps();
         updateLapsUI(context);
         invalidatePanelSwissKnife(context, R.id.lapsList);
         invalidatePanel(context);
@@ -267,7 +267,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
     private void updateLapsUI(Context context) {
         sHelperView.setViewVisibility(
                 R.id.helperContainer,
-                CocktailSinglePlusLapsService.getCount() > 0 ? View.VISIBLE : View.GONE
+                EdgeSinglePlusLapsService.getCount() > 0 ? View.VISIBLE : View.GONE
         );
     }
 
@@ -362,7 +362,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
         }
 
         int[] cocktailIds = SlookCocktailManager.getInstance(context).getCocktailIds(
-                new ComponentName(context, CocktailSinglePlusReceiver.class));
+                new ComponentName(context, EdgeSinglePlusReceiverOld.class));
 
         for (int cocktailId : cocktailIds) {
 //            debug(context, "Panel has cocktail [" + cocktailId + "], updating it");
@@ -446,7 +446,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
     private RemoteViews createPanelView(Context context) {
         debug(context, "Creating single_plus_layout");
 
-        RemoteViews panelView = new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.single_plus_layout);
+        RemoteViews panelView = new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.single_plus_panel_layout);
 
         setViewAction(context, panelView, R.id.startButton, ACTION_START_TIMER);
         setViewAction(context, panelView, R.id.lapButton, ACTION_LAP_TIMER);
@@ -464,7 +464,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
 
         setViewAction(context, helperView, R.id.lapsClearButton, ACTION_CLEAR_LAPS);
 
-        Intent intent = new Intent(context, CocktailSinglePlusLapsService.class);
+        Intent intent = new Intent(context, EdgeSinglePlusLapsService.class);
         helperView.setRemoteAdapter(R.id.lapsList, intent);
 
         return helperView;
@@ -484,7 +484,7 @@ public class CocktailSinglePlusReceiver extends BroadcastReceiver implements Sha
     }
 
     private void setViewAction(Context context, RemoteViews remoteView, int viewId, String action) {
-        Intent clickIntent = new Intent(context, CocktailSinglePlusReceiver.class);
+        Intent clickIntent = new Intent(context, EdgeSinglePlusReceiverOld.class);
         clickIntent.setAction(action);
         clickIntent.putExtra(EXTRA_COCKTAIL_ID, sCocktailId);
 
