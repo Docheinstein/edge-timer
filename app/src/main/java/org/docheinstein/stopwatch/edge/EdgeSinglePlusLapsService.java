@@ -1,12 +1,13 @@
 package org.docheinstein.stopwatch.edge;
 
+import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
 import org.docheinstein.stopwatch.BuildConfig;
 import org.docheinstein.stopwatch.R;
+import org.docheinstein.stopwatch.logging.Logger;
 import org.docheinstein.stopwatch.utils.StringUtils;
 import org.docheinstein.stopwatch.utils.TimeUtils;
 
@@ -16,61 +17,88 @@ import java.util.List;
 public class EdgeSinglePlusLapsService extends RemoteViewsService {
     private static final String TAG = EdgeSinglePlusLapsService.class.getSimpleName();
 
-    public static List<String> sLaps = new ArrayList<>();
+    private static class Laps {
+        private List<String> mLaps = new ArrayList<>();
+
+        public void add(long time) {
+            String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
+            d(null, "Adding lap: " + displayTime);
+            mLaps.add(displayTime);
+        }
+
+        public void clear() {
+            d(null, "Clearing laps");
+            mLaps.clear();
+        }
+
+        public int count() {
+            return mLaps.size();
+        }
+
+        public String get(int position) {
+            return mLaps.get(position);
+        }
+    }
+
+    private static Laps sLaps;
+
+    public static void addLap(long time) {
+        if (sLaps == null)
+            sLaps = new Laps();
+        sLaps.add(time);
+    }
+
+    public static void clearLaps() {
+        if (sLaps == null)
+            sLaps = new Laps();
+        sLaps.clear();
+    }
+
+    public static int getLapsCount() {
+        if (sLaps == null)
+            sLaps = new Laps();
+        return sLaps.count();
+    }
+
+    public String getLap(int position) {
+        if (sLaps == null)
+            sLaps = new Laps();
+        return sLaps.get(position);
+    }
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
         return new CocktailSinglePlusLapsViewFactory(intent);
     }
 
-    public static void addLap(long time) {
-        String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds(true));
-        Log.d(TAG, "Adding lap: " + displayTime);
-        sLaps.add(displayTime);
-    }
+    public class CocktailSinglePlusLapsViewFactory implements RemoteViewsService.RemoteViewsFactory {
 
-    public static void clearLaps() {
-        sLaps.clear();
-    }
+        private final String TAG = CocktailSinglePlusLapsViewFactory.class.getSimpleName();
 
-    public static int getCount() {
-        return sLaps != null ? sLaps.size() : 0;
-    }
+        public CocktailSinglePlusLapsViewFactory(Intent intent) {}
 
-    public static class CocktailSinglePlusLapsViewFactory implements RemoteViewsService.RemoteViewsFactory {
-
-        private static final String TAG = CocktailSinglePlusLapsViewFactory.class.getSimpleName();
-
-        public CocktailSinglePlusLapsViewFactory(Intent intent) {
-            Log.d(TAG,"CocktailSinglePlusLapsViewFactory()");
-            sLaps = new ArrayList<>();
-        }
         @Override
-        public void onCreate() {
-
-        }
+        public void onCreate() {}
 
         @Override
         public void onDataSetChanged() {
-            Log.d(TAG, "onDataSetChanged");
+            d(null, "onDataSetChanged");
         }
 
         @Override
-        public void onDestroy() {
-
-        }
+        public void onDestroy() {}
 
         @Override
         public int getCount() {
-            return (sLaps != null) ? sLaps.size() : 0;
+            d(null, "getCount -> " + getLapsCount());
+            return getLapsCount();
         }
 
         @Override
         public RemoteViews getViewAt(int position) {
-            Log.d(TAG, "getViewAt " + position);
+            d(null, "getViewAt: " + position);
 
-            if (position >= sLaps.size()) {
-                Log.w(TAG, "Can't provide view for out of bounds position (laps length = " + sLaps.size() + ")");
+            if (position >= getLapsCount()) {
                 return null;
             }
 
@@ -78,7 +106,7 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
                     BuildConfig.APPLICATION_ID,
                     R.layout.single_plus_helper_item_layout);
 
-            itemView.setTextViewText(R.id.lapItemText, sLaps.get(position));
+            itemView.setTextViewText(R.id.lapItemText, getLap(position));
             itemView.setTextViewText(R.id.lapItemPosition,
                     StringUtils.format( "%d.", position + 1));
 
@@ -105,4 +133,12 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
             return false;
         }
     }
+
+
+    private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }
+    private static void wtrace(Context ctx, String s) { Logger.getInstance(ctx).wtrace(TAG, s); }
+    private static void e(Context ctx, String s) { Logger.getInstance(ctx).e(TAG, s); }
+    private static void w(Context ctx, String s) { Logger.getInstance(ctx).w(TAG, s); }
+    private static void i(Context ctx, String s) { Logger.getInstance(ctx).i(TAG, s); }
+    private static void d(Context ctx, String s) { Logger.getInstance(ctx).d(TAG, s); }
 }

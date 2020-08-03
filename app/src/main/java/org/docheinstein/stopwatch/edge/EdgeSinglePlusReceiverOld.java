@@ -267,7 +267,7 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
     private void updateLapsUI(Context context) {
         sHelperView.setViewVisibility(
                 R.id.helperContainer,
-                EdgeSinglePlusLapsService.getCount() > 0 ? View.VISIBLE : View.GONE
+                EdgeSinglePlusLapsService.getLapsCount() > 0 ? View.VISIBLE : View.GONE
         );
     }
 

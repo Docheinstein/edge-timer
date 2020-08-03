@@ -4,6 +4,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailManager;
@@ -37,21 +38,15 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
     private static RemoteViews sPanelView;
     private static RemoteViews sHelperView;
 
-    private static class EdgeSinglePlusModel {
-        public long time;
-
-        public EdgeSinglePlusModel(long time) {
-            this.time = time;
-
-        }
-        public static EdgeSinglePlusModel createDefault() {
-            return new EdgeSinglePlusModel(0);
-        }
-    }
-
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
+
+        if (action == null) {
+            wtrace(context, "Invalid action onReceive");
+            return;
+        }
+
         i(context, "[" + hashCode() + "] onReceive: " + action);
 
         int cocktailId = -1;
@@ -65,16 +60,19 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
                 onStartStopwatch(context, cocktailId);
                 break;
             case ACTION_LAP_STOPWATCH:
+                onLapStopwatch(context, cocktailId);
                 break;
             case ACTION_PAUSE_STOPWATCH:
                 onPauseStopwatch(context, cocktailId);
                 break;
             case ACTION_RESUME_STOPWATCH:
+                onStartStopwatch(context, cocktailId);
                 break;
             case ACTION_RESET_STOPWATCH:
                 onResetStopwatch(context, cocktailId);
                 break;
             case ACTION_CLEAR_LAPS:
+                onClearLaps(context, cocktailId);
                 break;
             default:
                 super.onReceive(context, intent);
@@ -141,8 +139,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         setViewAction(context, helperView, cocktailId, R.id.lapsClearButton,
                 EdgeSinglePlusReceiver.ACTION_CLEAR_LAPS);
 
-//        Intent intent = new Intent(context, EdgeSinglePlusLapsService.class);
-//        helperView.setRemoteAdapter(R.id.lapsList, intent);
+        Intent intent = new Intent(context, EdgeSinglePlusLapsService.class);
+        helperView.setRemoteAdapter(R.id.lapsList, intent);
 
         return helperView;
     }
@@ -158,26 +156,6 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         remoteView.setOnClickPendingIntent(viewId, clickPendingIntent);
     }
 
-    private void renderCocktail(Context context, int cocktailId) {
-        long t = sStopwatch != null ? sStopwatch.elapsed() : 0;
-        EdgeSinglePlusModel model = new EdgeSinglePlusModel(t);
-        renderCocktail(context, cocktailId, model);
-    }
-
-    private void renderCocktail(Context context, int cocktailId, EdgeSinglePlusModel model) {
-        if (sPanelView == null) {
-            sPanelView = createPanelView(context, cocktailId);;
-        }
-
-        if (sHelperView == null) {
-            sHelperView = createHelperView(context, cocktailId);
-        }
-
-        sPanelView.setTextViewText(R.id.displayInlineText,
-                (new TimeUtils.Timesnap(model.time).toMinutesSecondsCentiseconds()));
-
-        SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
-    }
 
     public void onStartStopwatch(final Context context, final int cocktailId) {
         if (sStopwatch == null) {
@@ -191,13 +169,26 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         }
 
         sStopwatch.start();
-        sStopwatchScheduler.scheduleAtFixedRate(new Runnable() {
+        sStopwatchScheduler.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
                 renderCocktail(context, cocktailId);
             }
         }, 0, 8, TimeUnit.MILLISECONDS);
 
+//        renderCocktail(context, cocktailId);
+    }
+
+    public void onLapStopwatch(Context context, int cocktailId) {
+        if (sStopwatch == null)
+            return;
+
+        long elapsed = sStopwatch.elapsed();
+        d(context, "Lap: " + elapsed + "ms");
+
+        EdgeSinglePlusLapsService.addLap(elapsed);
+
+        invalidateHelperView(context, cocktailId);
         renderCocktail(context, cocktailId);
     }
 
@@ -225,8 +216,77 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
             wtrace(context, "Invalid stopwatch");
         }
 
+        onClearLaps(context, cocktailId);
+    }
+
+    public void onClearLaps(Context context, int cocktailId) {
+        EdgeSinglePlusLapsService.clearLaps();
+
+        invalidateHelperView(context, cocktailId);
         renderCocktail(context, cocktailId);
     }
+
+    private void renderCocktail(Context context, int cocktailId) {
+        // Detect current state
+        Stopwatch.State state;
+        long time;
+
+        if (sStopwatch != null) {
+            state = sStopwatch.getState();
+            time = sStopwatch.elapsed();
+        } else  {
+            state = Stopwatch.State.None;
+            time = 0;
+        }
+
+        // Create views, if needed
+        if (sPanelView == null) {
+            sPanelView = createPanelView(context, cocktailId);;
+        }
+
+        if (sHelperView == null) {
+            sHelperView = createHelperView(context, cocktailId);
+        }
+
+        // Update UI: display
+        sPanelView.setTextViewText(R.id.displayInlineText,
+                (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds()));
+
+        // Update UI: buttons
+        int notRunningButtonsVisibility = View.GONE;
+        int runningButtonsVisibility = View.GONE;
+        int pausedButtonsVisibility = View.GONE;
+
+        switch (state) {
+            case None:
+                notRunningButtonsVisibility = View.VISIBLE;
+                break;
+            case Running:
+                runningButtonsVisibility = View.VISIBLE;
+                break;
+            case Paused:
+                pausedButtonsVisibility = View.VISIBLE;
+                break;
+        }
+
+        sPanelView.setViewVisibility(R.id.notRunningButtons, notRunningButtonsVisibility);
+        sPanelView.setViewVisibility(R.id.runningButtons, runningButtonsVisibility);
+        sPanelView.setViewVisibility(R.id.pausedButtons, pausedButtonsVisibility);
+
+        // Update UI: laps
+        sHelperView.setViewVisibility(
+            R.id.helperContainer,
+            EdgeSinglePlusLapsService.getLapsCount() > 0 ? View.VISIBLE : View.GONE
+        );
+
+        SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
+    }
+
+
+    private void invalidateHelperView(Context context, int cocktailId) {
+        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
+    }
+
 
     private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }
     private static void wtrace(Context ctx, String s) { Logger.getInstance(ctx).wtrace(TAG, s); }

@@ -47,6 +47,11 @@ public class Logger {
     }
 
     private Logger(Context context) {
+        if (context == null) {
+            Log.w(TAG, "Creation failed due to null context");
+            return;
+        }
+
         File appDir = context.getExternalFilesDir(null);
 
         Log.d(TAG, "App directory: '" + appDir + "'");
