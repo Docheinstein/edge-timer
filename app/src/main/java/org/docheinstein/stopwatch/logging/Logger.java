@@ -36,17 +36,26 @@ public class Logger {
     private static Logger sLogger;
 
     private boolean mWriteOnLogcat = true;
-    private boolean mWriteOnFile = true;
+    private boolean mWriteOnFile = false;
     private boolean mFlushOnWrite = true;
     private BufferedWriter mWriter;
 
     public static Logger getInstance(Context context) {
         if (sLogger == null)
-            sLogger = new Logger(context);
+            sLogger = new Logger();
+        sLogger.initFileWriterIfNeeded(context);
         return sLogger;
     }
 
-    private Logger(Context context) {
+    private Logger() {}
+
+    private void initFileWriterIfNeeded(Context context) {
+        if (!mWriteOnFile)
+            return;
+
+        if (mWriter != null)
+            return;
+
         if (context == null) {
             Log.w(TAG, "Creation failed due to null context");
             return;

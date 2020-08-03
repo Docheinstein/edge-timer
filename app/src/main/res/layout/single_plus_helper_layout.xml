@@ -8,45 +8,152 @@
         android:visibility="gone"
         tools:visibility="visible">
 
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
-
-        <ImageView
-                android:id="@+id/lapsDividerTop"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_alignParentTop="true"
-                android:background="@color/colorTextLight" />
-
-        <ListView
-                android:id="@+id/lapsList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_above="@id/lapsDividerBottom"
-                android:layout_below="@id/lapsDividerTop"
-                android:dividerHeight="0dp"
-                android:transcriptMode="alwaysScroll" />
-
-        <ImageView
-                android:id="@+id/lapsDividerBottom"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_alignParentBottom="true"
-                android:background="@color/colorTextLight" />
-
-    </RelativeLayout>
-
-    <TextView
-            android:id="@+id/lapsClearButton"
+    <LinearLayout
+            android:id="@+id/helperTabSelector"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
-            android:gravity="center_horizontal"
-            android:padding="8dp"
-            android:text="@string/clear_laps"
-            android:textAlignment="center"
-            android:textColor="@color/colorAccent"
-            android:textSize="18sp" />
+            android:orientation="horizontal">
+
+
+        <TextView
+                android:id="@+id/helperTabTimesHeader"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-light"
+                android:gravity="center_horizontal"
+                android:padding="8dp"
+                android:text="@string/times_tab_header"
+                android:textAlignment="center"
+                android:textColor="@color/colorAccent"
+                android:textSize="18sp" />
+
+        <ImageView
+                android:id="@+id/tabsDivider"
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/colorTextLight" />
+
+        <TextView
+                android:id="@+id/helperTabLapsHeader"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-light"
+                android:gravity="center_horizontal"
+                android:padding="8dp"
+                android:text="@string/laps_tab_header"
+                android:textAlignment="center"
+                android:textColor="@color/colorTextDark"
+                android:textSize="18sp" />
+
+    </LinearLayout>
+
+    <ImageView
+            android:id="@+id/tabsToHelperDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorTextLight" />
+
+    <LinearLayout
+            android:id="@+id/lapsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            tools:visibility="gone">
+
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+            <ImageView
+                    android:id="@+id/lapsDividerTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentTop="true"
+                    android:background="@color/colorTextLight" />
+
+            <ListView
+                    android:id="@+id/lapsList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_above="@id/lapsDividerBottom"
+                    android:layout_below="@id/lapsDividerTop"
+                    android:dividerHeight="0dp"
+                    android:transcriptMode="alwaysScroll" />
+
+            <ImageView
+                    android:id="@+id/lapsDividerBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="true"
+                    android:background="@color/colorTextLight" />
+
+        </RelativeLayout>
+
+        <TextView
+                android:id="@+id/lapsClearButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:gravity="center_horizontal"
+                android:padding="8dp"
+                android:text="@string/clear_laps"
+                android:textAlignment="center"
+                android:textColor="@color/colorAccent"
+                android:textSize="18sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+            android:id="@+id/timesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+        <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+            <ImageView
+                    android:id="@+id/timesDividerTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentTop="true"
+                    android:background="@color/colorTextLight" />
+
+            <ListView
+                    android:id="@+id/timesList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_above="@id/timesDividerBottom"
+                    android:layout_below="@id/timesDividerTop"
+                    android:dividerHeight="0dp"
+                    android:transcriptMode="alwaysScroll" />
+
+            <ImageView
+                    android:id="@+id/timesDividerBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="true"
+                    android:background="@color/colorTextLight" />
+
+        </RelativeLayout>
+
+        <TextView
+                android:id="@+id/timesClearButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:gravity="center_horizontal"
+                android:padding="8dp"
+                android:text="@string/clear_times"
+                android:textAlignment="center"
+                android:textColor="@color/colorAccent"
+                android:textSize="18sp" />
+
+    </LinearLayout>
+
 </LinearLayout>

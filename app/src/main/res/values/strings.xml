@@ -10,5 +10,9 @@
     <string name="stop_stopwatch">Stop</string>
     <string name="reset_stopwatch">Reset</string>
 
-    <string name="clear_laps">CLEAR HISTORY</string>
+    <string name="clear_laps">CLEAR LAPS</string>
+    <string name="clear_times">CLEAR TIMES</string>
+
+    <string name="times_tab_header">TIMES</string>
+    <string name="laps_tab_header">LAPS</string>
 </resources>

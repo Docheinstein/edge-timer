@@ -104,7 +104,7 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
 
             RemoteViews itemView = new RemoteViews(
                     BuildConfig.APPLICATION_ID,
-                    R.layout.single_plus_helper_item_layout);
+                    R.layout.single_plus_helper_lap_item_layout);
 
             itemView.setTextViewText(R.id.lapItemText, getLap(position));
             itemView.setTextViewText(R.id.lapItemPosition,
@@ -115,7 +115,7 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
 
         @Override
         public RemoteViews getLoadingView() {
-            return new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.single_plus_helper_item_layout);
+            return new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.single_plus_helper_lap_item_layout);
         }
 
         @Override
