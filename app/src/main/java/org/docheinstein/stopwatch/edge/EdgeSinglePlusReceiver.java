@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -38,6 +39,12 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
 
+    private static final int[] BUTTONS = {
+            R.id.startButton, R.id.resumeButton,
+            R.id.stopButton, R.id.resetButton,
+            R.id.lapButton, R.id.lapsClearButton
+    };
+
     private static Stopwatch sStopwatch;
     private static ScheduledThreadPoolExecutor sStopwatchScheduler;
 
@@ -70,6 +77,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
 
         public boolean largeDisplay;
+        public boolean largeButtons;
         public Theme theme;
     };
 
@@ -334,7 +342,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
 
 
-        // Update UI: buttons
+        // Update UI: buttons container
         int notRunningButtonsVisibility = View.GONE;
         int runningButtonsVisibility = View.GONE;
         int pausedButtonsVisibility = View.GONE;
@@ -354,6 +362,40 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         sPanelView.setViewVisibility(R.id.notRunningButtons, notRunningButtonsVisibility);
         sPanelView.setViewVisibility(R.id.runningButtons, runningButtonsVisibility);
         sPanelView.setViewVisibility(R.id.pausedButtons, pausedButtonsVisibility);
+
+        // Update UI: buttons
+        int panelPaddingX, panelPaddingY;
+        int buttonsPaddingX, buttonsPaddingY;
+        int drawableId;
+        float buttonTextSize;
+
+        if (sPreferences.largeButtons) {
+            // large
+            drawableId = R.drawable.rect_button;
+            panelPaddingX = 0;
+            panelPaddingY = 0;
+            buttonsPaddingX = 0;
+            buttonsPaddingY = (int) ResourcesUtils.getDimen(context, R.dimen.button_large_padding_y);
+            buttonTextSize = ResourcesUtils.getDimen(context, R.dimen.button_large_text_size);
+        } else {
+            // normal
+            drawableId = R.drawable.oval_button;
+            panelPaddingX = (int) ResourcesUtils.getDimen(context, R.dimen.lower_panel_padding_x);
+            panelPaddingY = (int) ResourcesUtils.getDimen(context, R.dimen.lower_panel_padding_y);
+            buttonsPaddingX = 0;
+            buttonsPaddingY = (int) ResourcesUtils.getDimen(context, R.dimen.button_normal_padding_y);
+            buttonTextSize = ResourcesUtils.getDimen(context, R.dimen.button_normal_text_size);
+        }
+
+        sPanelView.setViewPadding(R.id.panelLowerContainer,
+                panelPaddingX, panelPaddingY, panelPaddingX, panelPaddingY);
+
+        for (int buttonId : BUTTONS) {
+            sPanelView.setTextViewTextSize(buttonId, TypedValue.COMPLEX_UNIT_PX, buttonTextSize);
+            sPanelView.setViewPadding(buttonId,
+                    buttonsPaddingX, buttonsPaddingY, buttonsPaddingX, buttonsPaddingY);
+            sPanelView.setInt(buttonId, "setBackgroundResource", drawableId);
+        }
 
         // Update UI: laps
         sHelperView.setViewVisibility(
@@ -397,10 +439,12 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         if (sPreferences == null)
             sPreferences = new Prefs();
 
+        sPreferences.largeButtons = PreferencesUtils.getBool(context, R.string.pref_large_buttons_key);
         sPreferences.largeDisplay = PreferencesUtils.getBool(context, R.string.pref_large_display_key);
         sPreferences.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context, R.string.pref_theme_key));
 
-        i(context, "Display: " + sPreferences.largeDisplay);
+        i(context, "Large buttons: " + sPreferences.largeDisplay);
+        i(context, "Large display: " + sPreferences.largeDisplay);
         i(context, "Theme: " + sPreferences.theme);
     }
 

@@ -4,5 +4,15 @@
     <dimen name="stopwatch_large_minutes_text_size">72sp</dimen>
     <dimen name="stopwatch_large_seconds_text_size">72sp</dimen>
     <dimen name="stopwatch_large_millis_text_size">50sp</dimen>
-    <dimen name="button_text_size">18sp</dimen>
+
+    <dimen name="button_normal_text_size">20sp</dimen>
+    <dimen name="button_large_text_size">22sp</dimen>
+
+    <dimen name="button_normal_padding_y">0dp</dimen>
+    <dimen name="button_large_padding_y">20dp</dimen>
+
+    <dimen name="lower_panel_padding_x">24dp</dimen>
+    <dimen name="lower_panel_padding_y">18dp</dimen>
+
+    <dimen name="oval_button_radius">22dp</dimen>
 </resources>
