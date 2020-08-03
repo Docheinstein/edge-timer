@@ -5,7 +5,7 @@
     <!-- pref_large_display -->
     <string name="pref_large_display_key">pref_large_display</string>
     <string name="pref_large_display_title">Large display</string>
-    <string name="pref_large_display_desc">Use a larger font for the timer display (multiline)</string>
+    <string name="pref_large_display_desc">Use a larger font for the stopwatch display (multiline)</string>
 
     <!-- pref_theme -->
     <string name="pref_theme_key">pref_theme</string>

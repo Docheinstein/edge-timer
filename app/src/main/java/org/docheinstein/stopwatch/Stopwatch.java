@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer;
+package org.docheinstein.stopwatch;
 
 public class Stopwatch {
 

@@ -1,14 +1,14 @@
-package org.docheinstein.edgetimer.edge;
+package org.docheinstein.stopwatch.edge;
 
 import android.content.Intent;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
-import org.docheinstein.edgetimer.BuildConfig;
-import org.docheinstein.edgetimer.R;
-import org.docheinstein.edgetimer.utils.StringUtils;
-import org.docheinstein.edgetimer.utils.TimeUtils;
+import org.docheinstein.stopwatch.BuildConfig;
+import org.docheinstein.stopwatch.R;
+import org.docheinstein.stopwatch.utils.StringUtils;
+import org.docheinstein.stopwatch.utils.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.List;

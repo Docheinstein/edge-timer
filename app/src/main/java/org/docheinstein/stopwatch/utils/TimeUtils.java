@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.utils;
+package org.docheinstein.stopwatch.utils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

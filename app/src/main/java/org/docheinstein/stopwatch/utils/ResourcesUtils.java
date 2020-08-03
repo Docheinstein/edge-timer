@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.utils;
+package org.docheinstein.stopwatch.utils;
 
 import android.content.Context;
 

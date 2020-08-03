@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-        package="org.docheinstein.edgetimer">
+        package="org.docheinstein.stopwatch">
 
     <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />
 
@@ -24,12 +24,12 @@
             <receiver android:name=".edge.EdgeSinglePlusReceiver">
                 <intent-filter>
                     <action android:name="com.samsung.android.cocktail.v2.action.COCKTAIL_UPDATE" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_START_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_PAUSE_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_LAP_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_RESUME_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_RESET_TIMER" />
-                    <action android:name="org.docheinstein.edgetimer.ACTION_CLEAR_LAPS" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_START_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_CLEAR_LAPS" />
                 </intent-filter>
 
                 <meta-data

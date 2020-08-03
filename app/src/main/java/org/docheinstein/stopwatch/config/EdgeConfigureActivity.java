@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.config;
+package org.docheinstein.stopwatch.config;
 
 import android.os.Bundle;
 
@@ -6,7 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceFragmentCompat;
 
-import org.docheinstein.edgetimer.R;
+import org.docheinstein.stopwatch.R;
 
 public class EdgeConfigureActivity extends AppCompatActivity {
     private static final String TAG = "EdgeConfigureActivity";
@@ -15,7 +15,7 @@ public class EdgeConfigureActivity extends AppCompatActivity {
     public static class EdgeConfigurePreferencesFragment extends PreferenceFragmentCompat {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-            setPreferencesFromResource(R.xml.edge_timer_prefs, rootKey);
+            setPreferencesFromResource(R.xml.prefs, rootKey);
         }
     }
 

@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.edge;
+package org.docheinstein.stopwatch.edge;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -17,13 +17,13 @@ import com.samsung.android.sdk.SsdkUnsupportedException;
 import com.samsung.android.sdk.look.Slook;
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailManager;
 
-import org.docheinstein.edgetimer.BuildConfig;
-import org.docheinstein.edgetimer.R;
-import org.docheinstein.edgetimer.Stopwatch;
-import org.docheinstein.edgetimer.utils.PreferencesUtils;
-import org.docheinstein.edgetimer.utils.ResourcesUtils;
-import org.docheinstein.edgetimer.utils.StringUtils;
-import org.docheinstein.edgetimer.utils.TimeUtils;
+import org.docheinstein.stopwatch.BuildConfig;
+import org.docheinstein.stopwatch.R;
+import org.docheinstein.stopwatch.Stopwatch;
+import org.docheinstein.stopwatch.utils.PreferencesUtils;
+import org.docheinstein.stopwatch.utils.ResourcesUtils;
+import org.docheinstein.stopwatch.utils.StringUtils;
+import org.docheinstein.stopwatch.utils.TimeUtils;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,12 +35,12 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
 
     private static final String DEFAULT_DISPLAY_TIME = "00.00";
 
-    private static final String ACTION_START_TIMER = "org.docheinstein.edgetimer.ACTION_START_TIMER";
-    private static final String ACTION_LAP_TIMER = "org.docheinstein.edgetimer.ACTION_LAP_TIMER";
-    private static final String ACTION_PAUSE_TIMER = "org.docheinstein.edgetimer.ACTION_PAUSE_TIMER";
-    private static final String ACTION_RESUME_TIMER = "org.docheinstein.edgetimer.ACTION_RESUME_TIMER";
-    private static final String ACTION_RESET_TIMER = "org.docheinstein.edgetimer.ACTION_RESET_TIMER";
-    private static final String ACTION_CLEAR_LAPS = "org.docheinstein.edgetimer.ACTION_CLEAR_LAPS";
+    private static final String ACTION_START_STOPWATCH = "org.docheinstein.stopwatch.ACTION_START_STOPWATCH";
+    private static final String ACTION_LAP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH";
+    private static final String ACTION_PAUSE_STOPWATCH = "org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH";
+    private static final String ACTION_RESUME_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH";
+    private static final String ACTION_RESET_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH";
+    private static final String ACTION_CLEAR_LAPS = "org.docheinstein.stopwatch.ACTION_CLEAR_LAPS";
 
     private static final String ACTION_COCKTAIL_ENABLED = "com.samsung.android.cocktail.action.COCKTAIL_ENABLED";
     private static final String ACTION_COCKTAIL_UPDATE = "com.samsung.android.cocktail.action.COCKTAIL_UPDATE";
@@ -82,19 +82,19 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
         debug(context, "Acting on stopwatch [" + (sStopwatch != null ? sStopwatch.hashCode() : "<null>") + "]");
 
         switch (action) {
-            case ACTION_START_TIMER:
+            case ACTION_START_STOPWATCH:
                 onStartTimer(context);
                 break;
-            case ACTION_LAP_TIMER:
+            case ACTION_LAP_STOPWATCH:
                 onLapTimer(context);
                 break;
-            case ACTION_PAUSE_TIMER:
+            case ACTION_PAUSE_STOPWATCH:
                 onPauseTimer(context);
                 break;
-            case ACTION_RESUME_TIMER:
+            case ACTION_RESUME_STOPWATCH:
                 onResumeTimer(context);
                 break;
-            case ACTION_RESET_TIMER:
+            case ACTION_RESET_STOPWATCH:
                 onResetTimer(context);
                 break;
             case ACTION_CLEAR_LAPS:
@@ -281,31 +281,31 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
 
         if (!sSettings.largeDisplay) {
             // inline display
-            sPanelView.setViewVisibility(R.id.timerDisplayInlineText, View.VISIBLE);
-            sPanelView.setViewVisibility(R.id.timerDisplayMultilineContainer, View.GONE);
+            sPanelView.setViewVisibility(R.id.displayInlineText, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.GONE);
 
             String displayTime = sStopwatch != null ?
                     snap.toMinutesSecondsCentiseconds(true) :
                     DEFAULT_DISPLAY_TIME;
-            sPanelView.setTextViewText(R.id.timerDisplayInlineText, displayTime);
+            sPanelView.setTextViewText(R.id.displayInlineText, displayTime);
         }
         else {
             // multiline display
-            sPanelView.setViewVisibility(R.id.timerDisplayInlineText, View.GONE);
-            sPanelView.setViewVisibility(R.id.timerDisplayMultilineContainer, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.displayInlineText, View.GONE);
+            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.VISIBLE);
 
             if (snap.minutes > 0) {
-                sPanelView.setViewVisibility(R.id.timerDisplayLargeMinutesLineText, View.VISIBLE);
-                sPanelView.setTextViewText(R.id.timerDisplayLargeMinutesLineText,
+                sPanelView.setViewVisibility(R.id.displayLargeMinutesLineText, View.VISIBLE);
+                sPanelView.setTextViewText(R.id.displayLargeMinutesLineText,
                     StringUtils.format("%02d", snap.minutes));
             }
             else {
-                sPanelView.setViewVisibility(R.id.timerDisplayLargeMinutesLineText, View.GONE);
+                sPanelView.setViewVisibility(R.id.displayLargeMinutesLineText, View.GONE);
             }
 
-            sPanelView.setTextViewText(R.id.timerDisplayLargeSecondsLineText,
+            sPanelView.setTextViewText(R.id.displayLargeSecondsLineText,
                     StringUtils.format("%02d", snap.seconds));
-            sPanelView.setTextViewText(R.id.timerDisplayLargeCentisLineText,
+            sPanelView.setTextViewText(R.id.displayLargeCentisLineText,
                     StringUtils.format("%02d", snap.millis / 10));
         }
     }
@@ -334,10 +334,10 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
 
         sPanelView.setInt(R.id.panelUpperContainer, "setBackgroundResource", panelUpperColorRes);
         sPanelView.setInt(R.id.panelLowerContainer, "setBackgroundResource", panelLowerColorRes);
-        sPanelView.setTextColor(R.id.timerDisplayInlineText, textColor);
-        sPanelView.setTextColor(R.id.timerDisplayLargeSecondsLineText, textColor);
-        sPanelView.setTextColor(R.id.timerDisplayLargeMinutesLineText, textColor);
-        sPanelView.setTextColor(R.id.timerDisplayLargeCentisLineText, textColor);
+        sPanelView.setTextColor(R.id.displayInlineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeSecondsLineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeMinutesLineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeCentisLineText, textColor);
     }
 
     private void loadSettings(Context context) {
@@ -448,11 +448,11 @@ public class EdgeSinglePlusReceiverOld extends BroadcastReceiver implements Shar
 
         RemoteViews panelView = new RemoteViews(BuildConfig.APPLICATION_ID, R.layout.single_plus_panel_layout);
 
-        setViewAction(context, panelView, R.id.startButton, ACTION_START_TIMER);
-        setViewAction(context, panelView, R.id.lapButton, ACTION_LAP_TIMER);
-        setViewAction(context, panelView, R.id.resumeButton, ACTION_RESUME_TIMER);
-        setViewAction(context, panelView, R.id.stopButton, ACTION_PAUSE_TIMER);
-        setViewAction(context, panelView, R.id.resetButton, ACTION_RESET_TIMER);
+        setViewAction(context, panelView, R.id.startButton, ACTION_START_STOPWATCH);
+        setViewAction(context, panelView, R.id.lapButton, ACTION_LAP_STOPWATCH);
+        setViewAction(context, panelView, R.id.resumeButton, ACTION_RESUME_STOPWATCH);
+        setViewAction(context, panelView, R.id.stopButton, ACTION_PAUSE_STOPWATCH);
+        setViewAction(context, panelView, R.id.resetButton, ACTION_RESET_STOPWATCH);
 
         return panelView;
     }

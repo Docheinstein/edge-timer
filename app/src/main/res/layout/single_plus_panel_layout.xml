@@ -14,7 +14,7 @@
             android:orientation="vertical">
 
         <TextView
-                android:id="@+id/timerDisplayInlineText"
+                android:id="@+id/displayInlineText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
@@ -23,11 +23,11 @@
                 android:text="@string/default_display_time"
                 android:textAlignment="center"
                 android:textColor="@color/colorTextLight"
-                android:textSize="@dimen/timer_text_size"
+                android:textSize="@dimen/stopwatch_text_size"
                 tools:text="00:00.00" />
 
         <LinearLayout
-                android:id="@+id/timerDisplayMultilineContainer"
+                android:id="@+id/displayMultilineContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
@@ -35,7 +35,7 @@
                 android:visibility="gone">
 
             <TextView
-                    android:id="@+id/timerDisplayLargeMinutesLineText"
+                    android:id="@+id/displayLargeMinutesLineText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
@@ -43,11 +43,11 @@
                     android:text="@string/default_display_time"
                     android:textAlignment="center"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/timer_large_minutes_text_size"
+                    android:textSize="@dimen/stopwatch_large_minutes_text_size"
                     tools:text="00" />
 
             <TextView
-                    android:id="@+id/timerDisplayLargeSecondsLineText"
+                    android:id="@+id/displayLargeSecondsLineText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
@@ -55,11 +55,11 @@
                     android:text="@string/default_display_time"
                     android:textAlignment="center"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/timer_large_seconds_text_size"
+                    android:textSize="@dimen/stopwatch_large_seconds_text_size"
                     tools:text="00" />
 
             <TextView
-                    android:id="@+id/timerDisplayLargeCentisLineText"
+                    android:id="@+id/displayLargeCentisLineText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
@@ -68,7 +68,7 @@
                     android:text="@string/default_display_time"
                     android:textAlignment="center"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/timer_large_millis_text_size"
+                    android:textSize="@dimen/stopwatch_large_millis_text_size"
                     tools:text="00" />
         </LinearLayout>
     </LinearLayout>
@@ -110,7 +110,7 @@
                     android:background="@drawable/oval_button"
                     android:backgroundTint="@color/colorButtonBlue"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/lap_timer"
+                    android:text="@string/lap_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size" />
 
@@ -123,7 +123,7 @@
                     android:background="@drawable/oval_button"
                     android:backgroundTint="@color/colorButtonOrange"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/stop_timer"
+                    android:text="@string/stop_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size"
                     android:visibility="visible" />
@@ -145,7 +145,7 @@
                     android:background="@drawable/oval_button"
                     android:backgroundTint="@color/colorButtonGreen"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/start_timer"
+                    android:text="@string/start_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size" />
         </LinearLayout>
@@ -168,7 +168,7 @@
                     android:background="@drawable/oval_button"
                     android:backgroundTint="@color/colorButtonGreen"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/resume_timer"
+                    android:text="@string/resume_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size" />
 
@@ -181,7 +181,7 @@
                     android:background="@drawable/oval_button"
                     android:backgroundTint="@color/colorButtonRed"
                     android:fontFamily="sans-serif-light"
-                    android:text="@string/reset_timer"
+                    android:text="@string/reset_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size"
                     android:visibility="visible" />

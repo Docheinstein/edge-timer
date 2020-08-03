@@ -1,4 +1,4 @@
-package org.docheinstein.edgetimer.edge;
+package org.docheinstein.stopwatch.edge;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -9,11 +9,11 @@ import android.widget.RemoteViews;
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailManager;
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailProvider;
 
-import org.docheinstein.edgetimer.BuildConfig;
-import org.docheinstein.edgetimer.R;
-import org.docheinstein.edgetimer.Stopwatch;
-import org.docheinstein.edgetimer.logging.Logger;
-import org.docheinstein.edgetimer.utils.TimeUtils;
+import org.docheinstein.stopwatch.BuildConfig;
+import org.docheinstein.stopwatch.R;
+import org.docheinstein.stopwatch.Stopwatch;
+import org.docheinstein.stopwatch.logging.Logger;
+import org.docheinstein.stopwatch.utils.TimeUtils;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -22,12 +22,12 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
 
     private static final String TAG = EdgeSinglePlusReceiver.class.getSimpleName();
 
-    private static final String ACTION_START_TIMER = "org.docheinstein.edgetimer.ACTION_START_TIMER";
-    private static final String ACTION_LAP_TIMER = "org.docheinstein.edgetimer.ACTION_LAP_TIMER";
-    private static final String ACTION_PAUSE_TIMER = "org.docheinstein.edgetimer.ACTION_PAUSE_TIMER";
-    private static final String ACTION_RESUME_TIMER = "org.docheinstein.edgetimer.ACTION_RESUME_TIMER";
-    private static final String ACTION_RESET_TIMER = "org.docheinstein.edgetimer.ACTION_RESET_TIMER";
-    private static final String ACTION_CLEAR_LAPS = "org.docheinstein.edgetimer.ACTION_CLEAR_LAPS";
+    private static final String ACTION_START_STOPWATCH = "org.docheinstein.stopwatch.ACTION_START_STOPWATCH";
+    private static final String ACTION_LAP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH";
+    private static final String ACTION_PAUSE_STOPWATCH = "org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH";
+    private static final String ACTION_RESUME_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH";
+    private static final String ACTION_RESET_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH";
+    private static final String ACTION_CLEAR_LAPS = "org.docheinstein.stopwatch.ACTION_CLEAR_LAPS";
 
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
 
@@ -61,18 +61,18 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         }
 
         switch (action) {
-            case ACTION_START_TIMER:
-                onStartTimer(context, cocktailId);
+            case ACTION_START_STOPWATCH:
+                onStartStopwatch(context, cocktailId);
                 break;
-            case ACTION_LAP_TIMER:
+            case ACTION_LAP_STOPWATCH:
                 break;
-            case ACTION_PAUSE_TIMER:
-                onPauseTimer(context, cocktailId);
+            case ACTION_PAUSE_STOPWATCH:
+                onPauseStopwatch(context, cocktailId);
                 break;
-            case ACTION_RESUME_TIMER:
+            case ACTION_RESUME_STOPWATCH:
                 break;
-            case ACTION_RESET_TIMER:
-                onResetTimer(context, cocktailId);
+            case ACTION_RESET_STOPWATCH:
+                onResetStopwatch(context, cocktailId);
                 break;
             case ACTION_CLEAR_LAPS:
                 break;
@@ -119,15 +119,15 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
                 BuildConfig.APPLICATION_ID, R.layout.single_plus_panel_layout);
 
         setViewAction(context, panelView, cocktailId, R.id.startButton,
-                EdgeSinglePlusReceiver.ACTION_START_TIMER);
+                EdgeSinglePlusReceiver.ACTION_START_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.lapButton,
-                EdgeSinglePlusReceiver.ACTION_LAP_TIMER);
+                EdgeSinglePlusReceiver.ACTION_LAP_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.resumeButton,
-                EdgeSinglePlusReceiver.ACTION_RESUME_TIMER);
+                EdgeSinglePlusReceiver.ACTION_RESUME_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.stopButton,
-                EdgeSinglePlusReceiver.ACTION_PAUSE_TIMER);
+                EdgeSinglePlusReceiver.ACTION_PAUSE_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.resetButton,
-                EdgeSinglePlusReceiver.ACTION_RESET_TIMER);
+                EdgeSinglePlusReceiver.ACTION_RESET_STOPWATCH);
 
         return panelView;
     }
@@ -173,13 +173,13 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
             sHelperView = createHelperView(context, cocktailId);
         }
 
-        sPanelView.setTextViewText(R.id.timerDisplayInlineText,
+        sPanelView.setTextViewText(R.id.displayInlineText,
                 (new TimeUtils.Timesnap(model.time).toMinutesSecondsCentiseconds()));
 
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
     }
 
-    public void onStartTimer(final Context context, final int cocktailId) {
+    public void onStartStopwatch(final Context context, final int cocktailId) {
         if (sStopwatch == null) {
             d(context, "Creating sStopwatch instance");
             sStopwatch = new Stopwatch();
@@ -201,7 +201,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         renderCocktail(context, cocktailId);
     }
 
-    public void onPauseTimer(Context context, int cocktailId) {
+    public void onPauseStopwatch(Context context, int cocktailId) {
         if (sStopwatch != null) {
             sStopwatch.pause();
         } else {
@@ -218,7 +218,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         renderCocktail(context, cocktailId);
     }
 
-    public void onResetTimer(Context context, int cocktailId) {
+    public void onResetStopwatch(Context context, int cocktailId) {
         if (sStopwatch != null) {
             sStopwatch.reset();
         } else {

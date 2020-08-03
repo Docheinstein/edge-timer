@@ -1,9 +1,9 @@
-package org.docheinstein.edgetimer.logging;
+package org.docheinstein.stopwatch.logging;
 
 import android.content.Context;
 import android.util.Log;
 
-import org.docheinstein.edgetimer.utils.TimeUtils;
+import org.docheinstein.stopwatch.utils.TimeUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
