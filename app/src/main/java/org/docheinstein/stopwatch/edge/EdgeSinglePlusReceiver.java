@@ -3,9 +3,12 @@ package org.docheinstein.stopwatch.edge;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
+
+import androidx.preference.PreferenceManager;
 
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailManager;
 import com.samsung.android.sdk.look.cocktailbar.SlookCocktailProvider;
@@ -14,12 +17,15 @@ import org.docheinstein.stopwatch.BuildConfig;
 import org.docheinstein.stopwatch.R;
 import org.docheinstein.stopwatch.Stopwatch;
 import org.docheinstein.stopwatch.logging.Logger;
+import org.docheinstein.stopwatch.utils.PreferencesUtils;
+import org.docheinstein.stopwatch.utils.ResourcesUtils;
+import org.docheinstein.stopwatch.utils.StringUtils;
 import org.docheinstein.stopwatch.utils.TimeUtils;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
+public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = EdgeSinglePlusReceiver.class.getSimpleName();
 
@@ -37,6 +43,36 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
 
     private static RemoteViews sPanelView;
     private static RemoteViews sHelperView;
+
+    private static Prefs sPreferences;
+    private static SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener;
+    private static boolean sPreferencesChanged = false;
+
+    private static class Prefs {
+        public enum Theme {
+            Light("light"),
+            Dark("dark")
+            ;
+
+            Theme(String value) {
+                this.value = value;
+            }
+
+            public static Theme fromValue(String value) {
+                if (value.equals("dark"))
+                    return Dark;
+                if (value.equals("light"))
+                    return Light;
+                return null;
+            }
+
+            public String value;
+        }
+
+        public boolean largeDisplay;
+        public Theme theme;
+    };
+
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -94,6 +130,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
     public void onVisibilityChanged(Context context, int cocktailId, int visibility) {
         boolean visible = visibility == SlookCocktailManager.COCKTAIL_VISIBILITY_SHOW;
         i(context, "onVisibilityChanged, visible = " + visible);
+        renderCocktail(context, cocktailId);
     }
 
     @Override
@@ -105,7 +142,13 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
 
         int cocktailId = cocktailIds[0];
 
-        i(context, "onUpdate: [" + cocktailId + "]");
+        i(context, "onUpdate {" + cocktailId + "}");
+
+        sPreferencesListener = this;
+
+        PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .registerOnSharedPreferenceChangeListener(sPreferencesListener);
 
         renderCocktail(context, cocktailId);
     }
@@ -226,17 +269,30 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         renderCocktail(context, cocktailId);
     }
 
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        sPreferencesChanged = true;
+        i(null, "Detected preferences change");
+    }
+
     private void renderCocktail(Context context, int cocktailId) {
+        // Reload preference if those are changed
+        if (sPreferences == null || sPreferencesChanged) {
+            sPreferencesChanged = false;
+            reloadPreferences(context);
+        }
+
         // Detect current state
         Stopwatch.State state;
-        long time;
+        TimeUtils.Timesnap timesnap;
 
         if (sStopwatch != null) {
             state = sStopwatch.getState();
-            time = sStopwatch.elapsed();
+            timesnap = new TimeUtils.Timesnap(sStopwatch.elapsed());
         } else  {
             state = Stopwatch.State.None;
-            time = 0;
+            timesnap = new TimeUtils.Timesnap(0);
         }
 
         // Create views, if needed
@@ -249,8 +305,34 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
         }
 
         // Update UI: display
-        sPanelView.setTextViewText(R.id.displayInlineText,
-                (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds()));
+        if (!sPreferences.largeDisplay) {
+            // inline
+            sPanelView.setViewVisibility(R.id.displayInlineText, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.GONE);
+
+            sPanelView.setTextViewText(R.id.displayInlineText,
+                    timesnap.toMinutesSecondsCentiseconds());
+        }
+        else {
+            // multiline
+            sPanelView.setViewVisibility(R.id.displayInlineText, View.GONE);
+            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.VISIBLE);
+
+            if (timesnap.minutes > 0) {
+                sPanelView.setViewVisibility(R.id.displayLargeMinutesLineText, View.VISIBLE);
+                sPanelView.setTextViewText(R.id.displayLargeMinutesLineText,
+                    StringUtils.format("%02d", timesnap.minutes));
+            }
+            else {
+                sPanelView.setViewVisibility(R.id.displayLargeMinutesLineText, View.GONE);
+            }
+
+            sPanelView.setTextViewText(R.id.displayLargeSecondsLineText,
+                    StringUtils.format("%02d", timesnap.seconds));
+            sPanelView.setTextViewText(R.id.displayLargeCentisLineText,
+                    StringUtils.format("%02d", timesnap.millis / 10));
+        }
+
 
         // Update UI: buttons
         int notRunningButtonsVisibility = View.GONE;
@@ -279,12 +361,47 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
             EdgeSinglePlusLapsService.getLapsCount() > 0 ? View.VISIBLE : View.GONE
         );
 
+        // Update UI: theme
+        int textColor;
+        int panelUpperColorRes;
+        int panelLowerColorRes;
+
+        if (sPreferences.theme == Prefs.Theme.Light) {
+            textColor = ResourcesUtils.getColor(context, R.color.colorTextDark);
+            panelUpperColorRes = R.color.colorLightBackground;
+            panelLowerColorRes = R.color.colorLightBackgroundLighter;
+        } else {
+            textColor = ResourcesUtils.getColor(context, R.color.colorTextLight);
+            panelUpperColorRes = R.color.colorDarkBackground;
+            panelLowerColorRes = R.color.colorDarkBackgroundLighter;
+        }
+
+        sPanelView.setInt(R.id.panelUpperContainer, "setBackgroundResource", panelUpperColorRes);
+        sPanelView.setInt(R.id.panelLowerContainer, "setBackgroundResource", panelLowerColorRes);
+        sPanelView.setTextColor(R.id.displayInlineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeSecondsLineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeMinutesLineText, textColor);
+        sPanelView.setTextColor(R.id.displayLargeCentisLineText, textColor);
+
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
     }
 
 
     private void invalidateHelperView(Context context, int cocktailId) {
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
+    }
+
+    private void reloadPreferences(Context context) {
+        d(context, "Reloading and caching preferences");
+
+        if (sPreferences == null)
+            sPreferences = new Prefs();
+
+        sPreferences.largeDisplay = PreferencesUtils.getBool(context, R.string.pref_large_display_key);
+        sPreferences.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context, R.string.pref_theme_key));
+
+        i(context, "Display: " + sPreferences.largeDisplay);
+        i(context, "Theme: " + sPreferences.theme);
     }
 
 

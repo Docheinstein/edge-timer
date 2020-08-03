@@ -3,8 +3,8 @@
     <color name="colorDarkBackground">#272727</color>
     <color name="colorDarkBackgroundLighter">#353535</color>
 
-    <color name="colorLightBackground">#C5C5C5</color>
-    <color name="colorLightBackgroundLighter">#E4E4E4</color>
+    <color name="colorLightBackground">#D8D8D8</color>
+    <color name="colorLightBackgroundLighter">#EAEAEA</color>
 
 
     <color name="colorPrimary">#272727</color>
@@ -17,5 +17,5 @@
     <color name="colorButtonGreen">#0A8A10</color>
 
     <color name="colorTextDark">#272727</color>
-    <color name="colorTextLight">#C5C5C5</color>
+    <color name="colorTextLight">#E1E1E1</color>
 </resources>

@@ -135,26 +135,25 @@ public class Logger {
     }
 
     public void write(Level lv, String tag, String s) {
-        if (mWriter == null) {
-            Log.w(TAG, "Can't log to file; mWriter is null");
-            return;
-        }
-
         if (mWriteOnLogcat) {
             Log.println(lv.logcatPriority, tag, s);
         }
 
         if (mWriteOnFile) {
-            try {
-                mWriter.write(TimeUtils.getCurrentDatetime("yyyy-MM-DD HH:mm::ss") +
-                        " " + lv.prefix + " " + tag + ": " + s + "\n"
-                );
-            } catch (IOException e) {
-                Log.w(TAG, "Failed to write to log file");
-            }
+            if (mWriter != null) {
+                try {
+                    mWriter.write(TimeUtils.getCurrentDatetime("yyyy-MM-DD HH:mm::ss") +
+                            " " + lv.prefix + " " + tag + ": " + s + "\n"
+                    );
+                } catch (IOException e) {
+                    Log.w(TAG, "Failed to write to log file");
+                }
 
-            if (mFlushOnWrite)
-                flush();
+                if (mFlushOnWrite)
+                    flush();
+            } else {
+                Log.w(TAG, "Can't log to file; mWriter is null");
+            }
         }
     }
 
