@@ -31,7 +31,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     // Actually should be 8 for being able to see every update,
     // but we should avoid to stress the UI too much
-    private static final int UPDATE_DELAY_CENTISECONDS_PRECISION = 80;
+    private static final int UPDATE_DELAY_CENTI_SECONDS_PRECISION = 80;
 
     private static final int UPDATE_DELAY_SECONDS_PRECISION = 200;
 
@@ -56,8 +56,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 //    private static RemoteViews sHelperView;
 
     private static Prefs sPreferences;
-    private static SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener;
     private static boolean sPreferencesChanged = false;
+
+    // Keep a reference because Timer.scheduleAtFixedRate requires so
+    @SuppressWarnings("FieldCanBeLocal")
+    private static SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener;
 
     private static Tab sTab = Tab.History;
 
@@ -93,7 +96,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         public boolean startStopOnly;
         public boolean centiseconds;
         public Theme theme;
-    };
+    }
 
 
     @Override
@@ -101,11 +104,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         String action = intent.getAction();
 
         if (action == null) {
-            wtrace(context, "Invalid action onReceive");
+            Logger.wtrace(context, TAG, "Invalid action onReceive");
             return;
         }
 
-        i(context, "[" + hashCode() + "] onReceive: " + action);
+        Logger.i(context, TAG, "[" + hashCode() + "] onReceive: " + action);
 
         int cocktailId = -1;
         Bundle extras = intent.getExtras();
@@ -148,44 +151,48 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     @Override
     public void onEnabled(Context context) {
-        i(context, "onEnabled");
+        Logger.i(context, TAG, "onEnabled");
     }
 
     @Override
     public void onDisabled(Context context) {
-        i(context, "onDisabled");
+        Logger.i(context, TAG, "onDisabled");
     }
 
     @Override
     public void onVisibilityChanged(Context context, int cocktailId, int visibility) {
         boolean visible = visibility == SlookCocktailManager.COCKTAIL_VISIBILITY_SHOW;
-        i(context, "onVisibilityChanged, visible = " + visible);
+        Logger.i(context, TAG, "onVisibilityChanged, visible = " + visible);
         if (visible)
-            renderCocktail(context, cocktailId);
+            synchronized (sLock) {
+                renderCocktail(context, cocktailId);
+            }
     }
 
     @Override
     public void onUpdate(Context context, SlookCocktailManager cocktailManager, int[] cocktailIds) {
         if (cocktailIds == null || cocktailIds.length != 1) {
-            w(context, "Unexpected cocktails array");
+            Logger.w(context, TAG, "Unexpected cocktails array");
             return;
         }
 
         int cocktailId = cocktailIds[0];
 
-        i(context, "onUpdate {" + cocktailId + "}");
+        Logger.i(context, TAG, "onUpdate {" + cocktailId + "}");
 
-        sPreferencesListener = this;
+        synchronized (sLock) {
+            sPreferencesListener = this;
 
-        PreferenceManager
-            .getDefaultSharedPreferences(context)
-            .registerOnSharedPreferenceChangeListener(sPreferencesListener);
+            PreferenceManager
+                .getDefaultSharedPreferences(context)
+                .registerOnSharedPreferenceChangeListener(sPreferencesListener);
 
-        renderCocktail(context, cocktailId);
+            renderCocktail(context, cocktailId);
+        }
     }
 
     private RemoteViews createPanelView(Context context, int cocktailId) {
-        d(context, "Creating panel view");
+        Logger.v(context, TAG, "Creating panel view");
 
         RemoteViews panelView = new RemoteViews(
                 BuildConfig.APPLICATION_ID, R.layout.single_plus_panel_layout);
@@ -205,7 +212,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     }
 
     private RemoteViews createHelperView(Context context, int cocktailId) {
-        d(context, "Creating helper view");
+        Logger.v(context, TAG, "Creating helper view");
 
         RemoteViews helperView = new RemoteViews(
                 BuildConfig.APPLICATION_ID, R.layout.single_plus_helper_layout);
@@ -243,12 +250,12 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     public void onStartStopwatch(final Context context, final int cocktailId, boolean forceRestart) {
         synchronized (sLock) {
             if (sStopwatch == null) {
-                d(context, "Creating sStopwatch instance");
+                Logger.d(context, TAG, "Creating sStopwatch instance");
                 sStopwatch = new Stopwatch();
             }
 
             if (sStopwatchScheduler == null) {
-                d(context, "Creating sStopwatchScheduler instance");
+                Logger.d(context, TAG, "Creating sStopwatchScheduler instance");
                 sStopwatchScheduler = new Timer();
             }
 
@@ -258,12 +265,14 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             sStopwatch.start();
 
             long updateDelay = getPreferences(context).centiseconds ?
-                    UPDATE_DELAY_CENTISECONDS_PRECISION : UPDATE_DELAY_SECONDS_PRECISION;
+                    UPDATE_DELAY_CENTI_SECONDS_PRECISION : UPDATE_DELAY_SECONDS_PRECISION;
 
             sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
-                    renderCocktail(context, cocktailId);
+                    synchronized (sLock) {
+                        renderCocktail(context, cocktailId);
+                    }
                 }
             }, 0, updateDelay);
 
@@ -277,7 +286,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             return;
 
             long elapsed = sStopwatch.elapsed();
-            d(context, "Lap: " + elapsed + "ms");
+            Logger.d(context, TAG, "Lap: " + elapsed + "ms");
 
 
             if (addLap(context, elapsed)) {
@@ -307,7 +316,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                     sStopwatch.pause();
                 }
             } else {
-                wtrace(context, "Invalid stopwatch");
+                Logger.wtrace(context, TAG, "Invalid stopwatch");
             }
 
             if (sStopwatchScheduler != null) {
@@ -315,7 +324,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 sStopwatchScheduler.purge();
                 sStopwatchScheduler = null;
             } else {
-                wtrace(context, "Invalid stopwatch scheduler");
+                Logger.wtrace(context, TAG, "Invalid stopwatch scheduler");
             }
 
             renderCocktail(context, cocktailId);
@@ -336,7 +345,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                     invalidateHistoryView(context, cocktailId);
                 }
             } else {
-                wtrace(context, "Invalid stopwatch");
+                Logger.wtrace(context, TAG, "Invalid stopwatch");
             }
 
             renderCocktail(context, cocktailId);
@@ -378,7 +387,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         synchronized (sLock) {
-            i(null, "Detected preferences change");
+            Logger.i(null, TAG, "Detected preferences change");
             sPreferencesChanged = true;
             // defer preference reloading to onVisibilityChange
         }
@@ -403,7 +412,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private static Prefs getPreferences(Context context) {
         synchronized (sLock) {
             if (sPreferences == null || sPreferencesChanged) {
-                d(context, "Reloading and caching preferences");
+                Logger.d(context, TAG, "Reloading and caching preferences");
                 sPreferencesChanged = false;
                 sPreferences = reloadPreferences(context);
             }
@@ -428,11 +437,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         prefs.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
                 R.string.pref_theme_key, R.string.pref_theme_default_value));
 
-        i(context, "Large display: " + prefs.largeDisplay);
-        i(context, "History: " + prefs.history);
-        i(context, "Laps: " + prefs.laps);
-        i(context, "Start/Stop only: " + prefs.startStopOnly);
-        i(context, "Theme: " + prefs.theme);
+        Logger.i(context, TAG, "Large display: " + prefs.largeDisplay);
+        Logger.i(context, TAG, "History: " + prefs.history);
+        Logger.i(context, TAG, "Laps: " + prefs.laps);
+        Logger.i(context, TAG, "Start/Stop only: " + prefs.startStopOnly);
+        Logger.i(context, TAG, "Theme: " + prefs.theme);
 
         return prefs;
     }
@@ -614,7 +623,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             sHelperView.setTextColor(R.id.helperTabLapsHeader,
                     ResourcesUtils.getColor(context, R.color.colorAccent));
         } else {
-            w(context, "Unknown tab mode: " + sTab);
+            Logger.w(context, TAG, "Unknown tab mode: " + sTab);
         }
 
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
@@ -627,11 +636,4 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private void invalidateHistoryView(Context context, int cocktailId) {
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.historyList);
     }
-
-    private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }
-    private static void wtrace(Context ctx, String s) { Logger.getInstance(ctx).wtrace(TAG, s); }
-    private static void e(Context ctx, String s) { Logger.getInstance(ctx).e(TAG, s); }
-    private static void w(Context ctx, String s) { Logger.getInstance(ctx).w(TAG, s); }
-    private static void i(Context ctx, String s) { Logger.getInstance(ctx).i(TAG, s); }
-    private static void d(Context ctx, String s) { Logger.getInstance(ctx).d(TAG, s); }
 }

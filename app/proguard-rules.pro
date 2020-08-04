@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+#-keep class org.docheinstein.stopwatch.*
+#-keep class com.samsung.android.sdk.*
+#-dontoptimize
+#-dontobfuscate
+#-dontshrink
+
+-assumenosideeffects class org.docheinstein.stopwatch.logging.Logger
+{
+    public static void etrace(...);
+    public static void wtrace(...);
+    public static void e(...);
+    public static void w(...);
+    public static void i(...);
+    public static void d(...);
+    public static void v(...);
+}

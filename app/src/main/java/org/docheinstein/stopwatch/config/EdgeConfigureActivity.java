@@ -9,9 +9,6 @@ import androidx.preference.PreferenceFragmentCompat;
 import org.docheinstein.stopwatch.R;
 
 public class EdgeConfigureActivity extends AppCompatActivity {
-    private static final String TAG = "EdgeConfigureActivity";
-
-
     public static class EdgeConfigurePreferencesFragment extends PreferenceFragmentCompat {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -27,6 +24,5 @@ public class EdgeConfigureActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.preferenceFragment, new EdgeConfigurePreferencesFragment())
                 .commit();
-
     }
 }

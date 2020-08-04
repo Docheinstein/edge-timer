@@ -8,6 +8,7 @@ import androidx.annotation.IntegerRes;
 import androidx.annotation.StringRes;
 import androidx.preference.PreferenceManager;
 
+@SuppressWarnings("unused")
 public class PreferencesUtils {
 
     public static void setString(Context context, @StringRes int keyId, String value) {

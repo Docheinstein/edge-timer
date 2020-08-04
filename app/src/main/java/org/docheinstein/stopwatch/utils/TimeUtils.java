@@ -27,8 +27,15 @@ public class TimeUtils {
             return toMinutesSecondsCentiseconds(true);
         }
 
+        public String toMinutesSeconds(boolean hideMinutesIfZero) {
+            if (hideMinutesIfZero && minutes == 0)
+                return StringUtils.format("%02d", seconds);
+            return StringUtils.format("%02d:%02d", minutes, seconds);
+        }
+
         public String toMinutesSeconds() {
-            return StringUtils.format("%02d.%02d", minutes, seconds);
+            return toMinutesSeconds(true);
+
         }
     }
 

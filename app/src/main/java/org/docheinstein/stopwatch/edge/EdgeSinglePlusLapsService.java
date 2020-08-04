@@ -1,6 +1,5 @@
 package org.docheinstein.stopwatch.edge;
 
-import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
@@ -22,12 +21,12 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
 
         public void add(long time) {
             String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
-            d(null, "Adding lap: " + displayTime);
+            Logger.d(null, TAG, "Adding lap: " + displayTime);
             mLaps.add(displayTime);
         }
 
         public void clear() {
-            d(null, "Clearing laps");
+            Logger.d(null, TAG, "Clearing laps");
             mLaps.clear();
         }
 
@@ -66,21 +65,19 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
-        return new CocktailSinglePlusLapsViewFactory(intent);
+        return new CocktailSinglePlusLapsViewFactory();
     }
 
-    public class CocktailSinglePlusLapsViewFactory implements RemoteViewsService.RemoteViewsFactory {
+    public static class CocktailSinglePlusLapsViewFactory implements RemoteViewsService.RemoteViewsFactory {
 
         private final String TAG = CocktailSinglePlusLapsViewFactory.class.getSimpleName();
-
-        public CocktailSinglePlusLapsViewFactory(Intent intent) {}
 
         @Override
         public void onCreate() {}
 
         @Override
         public void onDataSetChanged() {
-            d(null, "onDataSetChanged");
+            Logger.d(null, TAG, "onDataSetChanged");
         }
 
         @Override
@@ -88,13 +85,13 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
 
         @Override
         public int getCount() {
-            d(null, "getCount -> " + getLapsCount());
+            Logger.d(null, TAG, "getCount -> " + getLapsCount());
             return getLapsCount();
         }
 
         @Override
         public RemoteViews getViewAt(int position) {
-            d(null, "getViewAt: " + position);
+            Logger.d(null, TAG, "getViewAt: " + position);
 
             if (position >= getLapsCount()) {
                 return null;
@@ -131,12 +128,4 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
             return false;
         }
     }
-
-
-    private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }
-    private static void wtrace(Context ctx, String s) { Logger.getInstance(ctx).wtrace(TAG, s); }
-    private static void e(Context ctx, String s) { Logger.getInstance(ctx).e(TAG, s); }
-    private static void w(Context ctx, String s) { Logger.getInstance(ctx).w(TAG, s); }
-    private static void i(Context ctx, String s) { Logger.getInstance(ctx).i(TAG, s); }
-    private static void d(Context ctx, String s) { Logger.getInstance(ctx).d(TAG, s); }
 }

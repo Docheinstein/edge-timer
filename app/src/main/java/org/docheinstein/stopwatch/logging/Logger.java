@@ -19,6 +19,7 @@ public class Logger {
         Warn("[W]", Log.WARN),
         Info("[I]", Log.INFO),
         Debug("[D]", Log.DEBUG),
+        Verbose("[V]", Log.VERBOSE),
         ;
 
         Level(String prefix, int logcatPriority) {
@@ -47,74 +48,48 @@ public class Logger {
         return sLogger;
     }
 
-    private Logger() {}
-
-    private void initFileWriterIfNeeded(Context context) {
-        if (!mWriteOnFile)
-            return;
-
-        if (mWriter != null)
-            return;
-
-        if (context == null) {
-            Log.w(TAG, "Creation failed due to null context");
-            return;
-        }
-
-        File appDir = context.getExternalFilesDir(null);
-
-        Log.d(TAG, "App directory: '" + appDir + "'");
-
-        File logsDir = new File(appDir, LOGS_FOLDER);
-        Log.d(TAG, "Logs directory: '" + logsDir + "'");
-
-        if (!logsDir.exists()) {
-            Log.i(TAG, "Creating '" + logsDir + "'");
-            try {
-                logsDir.mkdirs();
-            } catch (Exception e) {
-                Log.e(TAG, "Creation of '" + logsDir + "' failed");
-                e.printStackTrace();
-                return;
-            }
-        }
-
-        File logFile = new File(logsDir, currentLogFilename());
-        Log.d(TAG, "Log file: '" + logFile + "'");
-
-        if (!logFile.exists()) {
-            Log.i(TAG, "Creating '" + logFile + "'");
-            try {
-                logFile.createNewFile();
-            } catch (Exception e) {
-                Log.e(TAG, "Creation of '" + logFile + "' failed");
-                e.printStackTrace();
-                return;
-            }
-        }
-
-        if (!logFile.exists()) {
-            Log.e(TAG, "Creation of '" + logFile + "' failed");
-            return;
-        }
-
-        try {
-            mWriter = new BufferedWriter(new FileWriter(logFile, true));
-        } catch (IOException e) {
-            Log.e(TAG, "Creation of BufferWriter for log file failed");
-        }
-
-        d(TAG, "Log writer has been created" + "\n" + stackTraceToString(Thread.currentThread().getStackTrace()));
+    public static void etrace(Context context, String tag, String s) {
+        Logger.getInstance(context).etrace(tag, s);
     }
 
+    public static void wtrace(Context context, String tag, String s) {
+        Logger.getInstance(context).wtrace(tag, s);
+    }
+
+    public static void e(Context context, String tag, String s) {
+        Logger.getInstance(context).e(tag, s);
+    }
+
+    public static void w(Context context, String tag, String s) {
+        Logger.getInstance(context).w(tag, s);
+    }
+
+    public static void i(Context context, String tag, String s) {
+        Logger.getInstance(context).i(tag, s);
+    }
+
+    public static void d(Context context, String tag, String s) {
+        Logger.getInstance(context).d(tag, s);
+    }
+
+    public static void v(Context context, String tag, String s) {
+        Logger.getInstance(context).v(tag, s);
+    }
+
+
+    private Logger() {}
+
+    @SuppressWarnings("unused")
     public void enableFlushOnWrite(boolean enabled) {
         mFlushOnWrite = enabled;
     }
 
+    @SuppressWarnings("unused")
     public void enableWriteOnLogcat(boolean enabled) {
         mWriteOnLogcat = enabled;
     }
 
+    @SuppressWarnings("unused")
     public void enableWriteOnFile(boolean enabled) {
         mWriteOnFile = enabled;
     }
@@ -130,17 +105,17 @@ public class Logger {
     public void e(String tag, String s) {
         write(Level.Error, tag, s);
     }
-
     public void w(String tag, String s) {
         write(Level.Warn, tag, s);
     }
-
     public void i(String tag, String s) {
         write(Level.Info, tag, s);
     }
-
     public void d(String tag, String s) {
         write(Level.Debug, tag, s);
+    }
+    public void v(String tag, String s) {
+        write(Level.Verbose, tag, s);
     }
 
     public void write(Level lv, String tag, String s) {
@@ -177,6 +152,66 @@ public class Logger {
         } catch (IOException e) {
             Log.w(TAG, "Failed to flush log file");
         }
+    }
+
+    private void initFileWriterIfNeeded(Context context) {
+        if (!mWriteOnFile)
+            return;
+
+        if (mWriter != null)
+            return;
+
+        if (context == null) {
+            Log.w(TAG, "Creation failed due to null context");
+            return;
+        }
+
+        File appDir = context.getExternalFilesDir(null);
+
+        Log.d(TAG, "App directory: '" + appDir + "'");
+
+        File logsDir = new File(appDir, LOGS_FOLDER);
+        Log.d(TAG, "Logs directory: '" + logsDir + "'");
+
+        if (!logsDir.exists()) {
+            Log.i(TAG, "Creating '" + logsDir + "'");
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                logsDir.mkdirs();
+            } catch (Exception e) {
+                Log.e(TAG, "Creation of '" + logsDir + "' failed");
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        File logFile = new File(logsDir, currentLogFilename());
+        Log.d(TAG, "Log file: '" + logFile + "'");
+
+        if (!logFile.exists()) {
+            Log.i(TAG, "Creating '" + logFile + "'");
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                logFile.createNewFile();
+            } catch (Exception e) {
+                Log.e(TAG, "Creation of '" + logFile + "' failed");
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        if (!logFile.exists()) {
+            Log.e(TAG, "Creation of '" + logFile + "' failed");
+            return;
+        }
+
+        try {
+            mWriter = new BufferedWriter(new FileWriter(logFile, true));
+        } catch (IOException e) {
+            Log.e(TAG, "Creation of BufferWriter for log file failed");
+        }
+
+        d(TAG, "Log writer has been created" + "\n" + stackTraceToString(Thread.currentThread().getStackTrace()));
     }
 
     private static String stackTraceToString(StackTraceElement[] stackEntries) {

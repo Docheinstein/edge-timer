@@ -8,6 +8,7 @@ import androidx.annotation.DimenRes;
 import androidx.annotation.IntegerRes;
 import androidx.annotation.StringRes;
 
+@SuppressWarnings("unused")
 public class ResourcesUtils {
     public static String getString(Context context, @StringRes int id) {
         return context.getResources().getString(id);
