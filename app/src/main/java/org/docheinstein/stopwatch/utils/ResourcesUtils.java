@@ -5,6 +5,7 @@ import android.content.Context;
 import androidx.annotation.BoolRes;
 import androidx.annotation.ColorRes;
 import androidx.annotation.DimenRes;
+import androidx.annotation.IntegerRes;
 import androidx.annotation.StringRes;
 
 public class ResourcesUtils {
@@ -14,6 +15,10 @@ public class ResourcesUtils {
 
     public static boolean getBool(Context context, @BoolRes int id) {
         return context.getResources().getBoolean(id);
+    }
+
+    public static int getInt(Context context, @IntegerRes int id) {
+        return context.getResources().getInteger(id);
     }
 
     public static int getColor(Context context, @ColorRes int id) {

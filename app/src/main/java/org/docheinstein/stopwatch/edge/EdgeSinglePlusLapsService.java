@@ -43,27 +43,25 @@ public class EdgeSinglePlusLapsService extends RemoteViewsService {
     private static Laps sLaps;
 
     public static void addLap(long time) {
-        if (sLaps == null)
-            sLaps = new Laps();
-        sLaps.add(time);
+        getLaps().add(time);
     }
 
     public static void clearLaps() {
-        if (sLaps == null)
-            sLaps = new Laps();
-        sLaps.clear();
+        getLaps().clear();
     }
 
     public static int getLapsCount() {
-        if (sLaps == null)
-            sLaps = new Laps();
-        return sLaps.count();
+        return getLaps().count();
     }
 
-    public String getLap(int position) {
+    public static String getLap(int position) {
+        return getLaps().get(position);
+    }
+
+    private static Laps getLaps() {
         if (sLaps == null)
             sLaps = new Laps();
-        return sLaps.get(position);
+        return sLaps;
     }
 
     @Override

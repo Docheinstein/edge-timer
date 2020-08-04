@@ -8,59 +8,88 @@ import android.widget.RemoteViewsService;
 import org.docheinstein.stopwatch.BuildConfig;
 import org.docheinstein.stopwatch.R;
 import org.docheinstein.stopwatch.logging.Logger;
+import org.docheinstein.stopwatch.utils.PreferencesUtils;
 import org.docheinstein.stopwatch.utils.StringUtils;
+import org.docheinstein.stopwatch.utils.TimeUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EdgeSinglePlusTimesService extends RemoteViewsService {
     private static final String TAG = EdgeSinglePlusTimesService.class.getSimpleName();
-//
-//    private static class Laps {
-//        private List<String> mLaps = new ArrayList<>();
-//
-//        public void add(long time) {
-//            String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
-//            d(null, "Adding lap: " + displayTime);
-//            mLaps.add(displayTime);
-//        }
-//
-//        public void clear() {
-//            d(null, "Clearing laps");
-//            mLaps.clear();
-//        }
-//
-//        public int count() {
-//            return mLaps.size();
-//        }
-//
-//        public String get(int position) {
-//            return mLaps.get(position);
-//        }
-//    }
-//
-//    private static Laps sLaps;
-//
-//    public static void addLap(long time) {
-//        if (sLaps == null)
-//            sLaps = new Laps();
-//        sLaps.add(time);
-//    }
-//
-//    public static void clearLaps() {
-//        if (sLaps == null)
-//            sLaps = new Laps();
-//        sLaps.clear();
-//    }
-//
-//    public static int getLapsCount() {
-//        if (sLaps == null)
-//            sLaps = new Laps();
-//        return sLaps.count();
-//    }
-//
-//    public String getLap(int position) {
-//        if (sLaps == null)
-//            sLaps = new Laps();
-//        return sLaps.get(position);
-//    }
+
+    private static class Times {
+        private static final String PREF_TIMES_COUNT_KEY = "pref_times_count_key";
+        private static final String PREF_TIMES_NTH_ = "pref_time_";
+
+        private final Context mContext;
+
+        private List<String> mTimes;
+
+        public Times(Context context) {
+            mContext = context;
+            // Load times from preferences
+            int timesCount = PreferencesUtils.getInt(mContext, PREF_TIMES_COUNT_KEY);
+            d(context, "Will load " + timesCount + " times");
+            mTimes = new ArrayList<>(timesCount);
+            for (int i = 0; i < timesCount; i++) {
+                String displayTime = PreferencesUtils.getString(context, PREF_TIMES_NTH_ + i);
+                if (StringUtils.isValid(displayTime))
+                    mTimes.add(displayTime);
+                else
+                    w(context, "Invalid display time at position " + i + "/" + timesCount);
+            }
+        }
+
+        public void add(long time) {
+            String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
+            int idx = mTimes.size();
+            d(null, "Adding time '" + displayTime + "' at position " + idx);
+            mTimes.add(displayTime);
+            PreferencesUtils.getWriter(mContext)
+                    .putString(PREF_TIMES_NTH_ + idx, displayTime)
+                    .putInt(PREF_TIMES_COUNT_KEY, mTimes.size())
+                    .apply();
+        }
+
+        public void clear() {
+            d(null, "Clearing times");
+            mTimes.clear();
+            PreferencesUtils.setInt(mContext, PREF_TIMES_COUNT_KEY, mTimes.size());
+        }
+
+        public int count() {
+            return mTimes.size();
+        }
+
+        public String get(int position) {
+            return mTimes.get(position);
+        }
+    }
+
+    private static Times sTimes;
+
+    public static void addTime(Context context, long time) {
+        getTimes(context).add(time);
+    }
+
+    public static void clearTimes(Context context) {
+        getTimes(context).clear();
+    }
+
+    public static int getTimesCount(Context context) {
+        return getTimes(context).count();
+    }
+
+    public static String getTime(Context context, int position) {
+        return getTimes(context).get(position);
+    }
+
+    private static Times getTimes(Context context) {
+        if (sTimes == null)
+            sTimes = new Times(context);
+        return sTimes;
+    }
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
@@ -71,7 +100,7 @@ public class EdgeSinglePlusTimesService extends RemoteViewsService {
 
         private final String TAG = CocktailSinglePlusTimesViewFactory.class.getSimpleName();
 
-        public CocktailSinglePlusTimesViewFactory(Intent intent) {}
+        public CocktailSinglePlusTimesViewFactory(Intent intent) { }
 
         @Override
         public void onCreate() {}
@@ -86,22 +115,24 @@ public class EdgeSinglePlusTimesService extends RemoteViewsService {
 
         @Override
         public int getCount() {
-            return 1;
+            return getTimesCount(getBaseContext());
         }
 
         @Override
         public RemoteViews getViewAt(int position) {
             d(null, "getViewAt: " + position);
 
-//            if (position >= getLapsCount()) {
-//                return null;
-//            }
+            if (position >= getTimesCount(getBaseContext())) {
+                return null;
+            }
 
             RemoteViews itemView = new RemoteViews(
                     BuildConfig.APPLICATION_ID,
                     R.layout.single_plus_helper_time_item_layout);
 
-            itemView.setTextViewText(R.id.timeItemText, "Fooling you");
+            itemView.setTextViewText(R.id.timeItemText, getTime(getBaseContext(), position));
+            itemView.setTextViewText(R.id.timeItemPosition,
+                    StringUtils.format( "%d.", position + 1));
 
             return itemView;
         }

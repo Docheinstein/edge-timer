@@ -208,6 +208,9 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         setViewAction(context, helperView, cocktailId, R.id.lapsClearButton,
                 EdgeSinglePlusReceiver.ACTION_CLEAR_LAPS);
 
+        setViewAction(context, helperView, cocktailId, R.id.timesClearButton,
+                EdgeSinglePlusReceiver.ACTION_CLEAR_TIMES);
+
         setViewAction(context, helperView, cocktailId, R.id.helperTabLapsHeader,
                 EdgeSinglePlusReceiver.ACTION_TAB_LAPS);
 
@@ -267,9 +270,12 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             long elapsed = sStopwatch.elapsed();
             d(context, "Lap: " + elapsed + "ms");
 
-            EdgeSinglePlusLapsService.addLap(elapsed);
 
-            invalidateHelperView(context, cocktailId);
+            if (addLap(context, elapsed)) {
+                sTab = Tab.Laps; // auto switch to LAPS tab
+                invalidateLapsView(context, cocktailId);
+            }
+
             renderCocktail(context, cocktailId);
         }
     }
@@ -277,10 +283,20 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     public void onStopStopwatch(Context context, int cocktailId) {
         synchronized (sLock) {
             if (sStopwatch != null) {
-                if (getPreferences(context).startStopOnly)
+                if (getPreferences(context).startStopOnly) {
                     sStopwatch.stop();
-                else
+
+                    EdgeSinglePlusLapsService.clearLaps();
+                    invalidateLapsView(context, cocktailId);
+
+                    if (addTime(context, sStopwatch.elapsed())) {
+                        sTab = Tab.Times; // auto switch to TIMES tab
+                        invalidateTimesView(context, cocktailId);
+                    }
+                }
+                else {
                     sStopwatch.pause();
+                }
             } else {
                 wtrace(context, "Invalid stopwatch");
             }
@@ -300,12 +316,21 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     public void onResetStopwatch(Context context, int cocktailId) {
         synchronized (sLock) {
             if (sStopwatch != null) {
+                long elapsed = sStopwatch.elapsed();
                 sStopwatch.reset();
+
+                EdgeSinglePlusLapsService.clearLaps();
+                invalidateLapsView(context, cocktailId);
+
+                if (addTime(context, elapsed)) {
+                    sTab = Tab.Times; // auto switch to TIMES tab
+                    invalidateTimesView(context, cocktailId);
+                }
             } else {
                 wtrace(context, "Invalid stopwatch");
             }
 
-            onClearLaps(context, cocktailId);
+            renderCocktail(context, cocktailId);
         }
     }
 
@@ -313,17 +338,16 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         synchronized (sLock) {
             EdgeSinglePlusLapsService.clearLaps();
 
-            invalidateHelperView(context, cocktailId);
+            invalidateLapsView(context, cocktailId);
             renderCocktail(context, cocktailId);
         }
     }
 
     public void onClearTimes(Context context, int cocktailId) {
         synchronized (sLock) {
-            //        EdgeSinglePlusLapsService.clearLaps();
-            // ...
+            EdgeSinglePlusTimesService.clearTimes(context);
 
-            invalidateHelperView(context, cocktailId);
+            invalidateTimesView(context, cocktailId);
             renderCocktail(context, cocktailId);
         }
     }
@@ -351,11 +375,26 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
     }
 
+    private boolean addTime(Context context, long time) {
+        if (getPreferences(context).history) {
+            EdgeSinglePlusTimesService.addTime(context, time);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean addLap(Context context, long time) {
+        if (getPreferences(context).laps) {
+            EdgeSinglePlusLapsService.addLap(time);
+            return true;
+        }
+        return false;
+    }
+
     private static Prefs getPreferences(Context context) {
         synchronized (sLock) {
-            d(context, "Reloading and caching preferences");
-
             if (sPreferences == null || sPreferencesChanged) {
+                d(context, "Reloading and caching preferences");
                 sPreferencesChanged = false;
                 sPreferences = reloadPreferences(context);
             }
@@ -381,7 +420,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         i(context, "Large display: " + prefs.largeDisplay);
         i(context, "History: " + prefs.history);
         i(context, "Laps: " + prefs.laps);
-        i(context, "Star/Stop only : " + prefs.startStopOnly);
+        i(context, "Start/Stop only: " + prefs.startStopOnly);
         i(context, "Theme: " + prefs.theme);
 
         return prefs;
@@ -467,8 +506,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         sPanelView.setViewVisibility(R.id.runningButtons, runningButtonsVisibility);
         sPanelView.setViewVisibility(R.id.pausedButtons, pausedButtonsVisibility);
 
-        // Update UI: buttons
-        sPanelView.setViewVisibility(R.id.lapButton, prefs.laps ? View.VISIBLE : View.GONE);
+        // Update UI: start/stop only?
 
         if (prefs.startStopOnly) {
             sPanelView.setViewVisibility(R.id.resumeButton, View.GONE);
@@ -500,26 +538,58 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         sPanelView.setTextColor(R.id.displayLargeMinutesLineText, textColor);
         sPanelView.setTextColor(R.id.displayLargeCentisLineText, textColor);
 
+        // Update UI: helper/tabs
+        boolean lapsIsFilled = prefs.laps && EdgeSinglePlusLapsService.getLapsCount() > 0;
+        boolean timesIsFilled = prefs.history && EdgeSinglePlusTimesService.getTimesCount(context) > 0;
+        int tabsEnabledCount = (prefs.laps ? 1 : 0) + (prefs.history ? 1 : 0);
+        int tabsFilledCount = (lapsIsFilled ? 1 : 0) + (timesIsFilled ? 1 : 0);
+
+        sHelperView.setViewVisibility(R.id.helperContainer, tabsFilledCount > 0 ? View.VISIBLE : View.GONE);
+        sHelperView.setViewVisibility(R.id.tabsDivider, tabsEnabledCount > 1 ? View.VISIBLE : View.GONE);
+
         // Update UI: laps
-        sHelperView.setViewVisibility(
-            R.id.helperContainer,
-                (prefs.laps && EdgeSinglePlusLapsService.getLapsCount() > 0) ?
-                        View.VISIBLE : View.GONE
-        );
+        if (prefs.laps) {
+            sPanelView.setViewVisibility(R.id.lapButton, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.lapsList, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.VISIBLE);
+        } else {
+            sPanelView.setViewVisibility(R.id.lapButton, View.GONE);
+            sHelperView.setViewVisibility(R.id.lapsList, View.GONE);
+            sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
+            sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.GONE);
+        }
+
+        // Update UI: times
+        if (prefs.history) {
+            sHelperView.setViewVisibility(R.id.timesList, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.timesContainer, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.helperTabTimesHeader, View.VISIBLE);
+        } else {
+            sHelperView.setViewVisibility(R.id.timesList, View.GONE);
+            sHelperView.setViewVisibility(R.id.timesContainer, View.GONE);
+            sHelperView.setViewVisibility(R.id.helperTabTimesHeader, View.GONE);
+        }
 
         // Update UI: tab
+        // Ensure the tab is appropriate
+        if (sTab == Tab.Times && !prefs.history)
+            sTab = Tab.Laps;
+        if (sTab == Tab.Laps && !prefs.laps)
+            sTab = Tab.Times;
+
         if (sTab == Tab.Times) {
             sHelperView.setViewVisibility(R.id.timesContainer, View.VISIBLE);
             sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
             sHelperView.setTextColor(R.id.helperTabTimesHeader,
                     ResourcesUtils.getColor(context, R.color.colorAccent));
             sHelperView.setTextColor(R.id.helperTabLapsHeader,
-                    ResourcesUtils.getColor(context, R.color.colorTextDark));
+                    ResourcesUtils.getColor(context, R.color.colorTextMid));
         } else if (sTab == Tab.Laps) {
             sHelperView.setViewVisibility(R.id.timesContainer, View.GONE);
             sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
             sHelperView.setTextColor(R.id.helperTabTimesHeader,
-                    ResourcesUtils.getColor(context, R.color.colorTextDark));
+                    ResourcesUtils.getColor(context, R.color.colorTextMid));
             sHelperView.setTextColor(R.id.helperTabLapsHeader,
                     ResourcesUtils.getColor(context, R.color.colorAccent));
         } else {
@@ -529,10 +599,13 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
     }
 
-    private void invalidateHelperView(Context context, int cocktailId) {
+    private void invalidateLapsView(Context context, int cocktailId) {
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
     }
 
+    private void invalidateTimesView(Context context, int cocktailId) {
+        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.timesList);
+    }
 
     private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }
     private static void wtrace(Context ctx, String s) { Logger.getInstance(ctx).wtrace(TAG, s); }

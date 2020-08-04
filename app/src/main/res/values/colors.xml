@@ -17,5 +17,8 @@
     <color name="colorButtonGreen">#0A8A10</color>
 
     <color name="colorTextDark">#272727</color>
+    <color name="colorTextMid">#9C9A9A</color>
     <color name="colorTextLight">#E1E1E1</color>
+
+    <color name="colorTextRed">#931D1D</color>
 </resources>

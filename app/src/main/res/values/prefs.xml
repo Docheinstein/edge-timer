@@ -43,5 +43,4 @@
     <string name="pref_startstop_only_title">START/STOP only</string>
     <string name="pref_startstop_only_desc">Show only START/STOP buttons (instead of PAUSE/RESUME/RESET)</string>
     <bool name="pref_startstop_only_default_value">false</bool>
-
 </resources>

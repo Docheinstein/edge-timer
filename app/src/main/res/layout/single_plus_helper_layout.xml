@@ -44,7 +44,7 @@
                 android:padding="8dp"
                 android:text="@string/laps_tab_header"
                 android:textAlignment="center"
-                android:textColor="@color/colorTextDark"
+                android:textColor="@color/colorTextMid"
                 android:textSize="18sp" />
 
     </LinearLayout>
@@ -101,7 +101,7 @@
                 android:padding="8dp"
                 android:text="@string/clear_laps"
                 android:textAlignment="center"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/colorTextRed"
                 android:textSize="18sp" />
 
     </LinearLayout>
@@ -151,7 +151,7 @@
                 android:padding="8dp"
                 android:text="@string/clear_times"
                 android:textAlignment="center"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/colorTextRed"
                 android:textSize="18sp" />
 
     </LinearLayout>
