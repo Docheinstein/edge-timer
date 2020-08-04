@@ -31,6 +31,13 @@ public class Stopwatch {
         }
     }
 
+    public void stop() {
+        if (isRunning()) {
+            mSavedAmount = elapsed();
+            mState = State.None;
+        }
+    }
+
     public void reset() {
         mSavedAmount = 0;
         mStart = System.currentTimeMillis();

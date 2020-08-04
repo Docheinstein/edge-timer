@@ -19,24 +19,29 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-            android:title="@string/pref_category_history">
+            android:title="@string/pref_category_times">
 
         <CheckBoxPreference
                 android:defaultValue="@bool/pref_history_default_value"
                 android:key="@string/pref_history_key"
                 android:title="@string/pref_history_title"
                 android:summary="@string/pref_history_desc"/>
-    </PreferenceCategory>
-
-
-    <PreferenceCategory
-            android:title="@string/pref_category_laps">
 
         <CheckBoxPreference
                 android:defaultValue="@bool/pref_laps_default_value"
                 android:key="@string/pref_laps_key"
                 android:title="@string/pref_laps_title"
                 android:summary="@string/pref_laps_desc"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+            android:title="@string/pref_category_stopwatch">
+
+        <CheckBoxPreference
+                android:defaultValue="@bool/pref_startstop_only_default_value"
+                android:key="@string/pref_startstop_only_key"
+                android:title="@string/pref_startstop_only_title"
+                android:summary="@string/pref_startstop_only_desc"/>
     </PreferenceCategory>
 
 

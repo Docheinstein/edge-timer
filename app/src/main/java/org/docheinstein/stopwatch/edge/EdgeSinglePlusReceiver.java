@@ -33,7 +33,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     private static final String ACTION_START_STOPWATCH = "org.docheinstein.stopwatch.ACTION_START_STOPWATCH";
     private static final String ACTION_LAP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH";
-    private static final String ACTION_PAUSE_STOPWATCH = "org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH";
+    private static final String ACTION_STOP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_STOP_STOPWATCH";
     private static final String ACTION_RESUME_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH";
     private static final String ACTION_RESET_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH";
     private static final String ACTION_TAB_LAPS = "org.docheinstein.stopwatch.ACTION_TAB_LAPS";
@@ -42,6 +42,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private static final String ACTION_CLEAR_TIMES = "org.docheinstein.stopwatch.ACTION_CLEAR_TIMES";
 
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
+
+    private static final Object sLock = new Object();
 
     private static Stopwatch sStopwatch;
     private static Timer sStopwatchScheduler;
@@ -84,6 +86,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         public boolean largeDisplay;
         public boolean history;
         public boolean laps;
+        public boolean startStopOnly;
         public Theme theme;
     };
 
@@ -107,14 +110,15 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
         switch (action) {
             case ACTION_START_STOPWATCH:
+                onStartStopwatch(context, cocktailId, true);
             case ACTION_RESUME_STOPWATCH:
-                onStartStopwatch(context, cocktailId);
+                onStartStopwatch(context, cocktailId, false);
                 break;
             case ACTION_LAP_STOPWATCH:
                 onLapStopwatch(context, cocktailId);
                 break;
-            case ACTION_PAUSE_STOPWATCH:
-                onPauseStopwatch(context, cocktailId);
+            case ACTION_STOP_STOPWATCH:
+                onStopStopwatch(context, cocktailId);
                 break;
             case ACTION_RESET_STOPWATCH:
                 onResetStopwatch(context, cocktailId);
@@ -188,7 +192,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         setViewAction(context, panelView, cocktailId, R.id.resumeButton,
                 EdgeSinglePlusReceiver.ACTION_RESUME_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.stopButton,
-                EdgeSinglePlusReceiver.ACTION_PAUSE_STOPWATCH);
+                EdgeSinglePlusReceiver.ACTION_STOP_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.resetButton,
                 EdgeSinglePlusReceiver.ACTION_RESET_STOPWATCH);
 
@@ -228,112 +232,164 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     }
 
 
-    public void onStartStopwatch(final Context context, final int cocktailId) {
-        if (sStopwatch == null) {
-            d(context, "Creating sStopwatch instance");
-            sStopwatch = new Stopwatch();
-        }
-
-        if (sStopwatchScheduler == null) {
-            d(context, "Creating sStopwatchScheduler instance");
-//            sStopwatchScheduler = new ScheduledThreadPoolExecutor(1);
-            sStopwatchScheduler = new Timer();
-        }
-
-//        final AtomicInteger c = new AtomicInteger(0);
-        sStopwatch.start();
-        sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-//                int x = c.getAndIncrement();
-//                d(context, "renderCocktail() [" + x + "]");
-                renderCocktail(context, cocktailId);
-//                d(context, "renderCocktail() DONE [" + x + "]");
+    public void onStartStopwatch(final Context context, final int cocktailId, boolean forceRestart) {
+        synchronized (sLock) {
+            if (sStopwatch == null) {
+                d(context, "Creating sStopwatch instance");
+                sStopwatch = new Stopwatch();
             }
-        }, 0, UPDATE_DELAY);
 
-//        renderCocktail(context, cocktailId);
+            if (sStopwatchScheduler == null) {
+                d(context, "Creating sStopwatchScheduler instance");
+                sStopwatchScheduler = new Timer();
+            }
+
+            if (forceRestart)
+                sStopwatch.reset();
+
+            sStopwatch.start();
+            sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    renderCocktail(context, cocktailId);
+                }
+            }, 0, UPDATE_DELAY);
+
+            renderCocktail(context, cocktailId);
+        }
     }
 
     public void onLapStopwatch(Context context, int cocktailId) {
-        if (sStopwatch == null)
+        synchronized (sLock) {
+            if (sStopwatch == null)
             return;
 
-        long elapsed = sStopwatch.elapsed();
-        d(context, "Lap: " + elapsed + "ms");
+            long elapsed = sStopwatch.elapsed();
+            d(context, "Lap: " + elapsed + "ms");
 
-        EdgeSinglePlusLapsService.addLap(elapsed);
+            EdgeSinglePlusLapsService.addLap(elapsed);
 
-        invalidateHelperView(context, cocktailId);
-        renderCocktail(context, cocktailId);
+            invalidateHelperView(context, cocktailId);
+            renderCocktail(context, cocktailId);
+        }
     }
 
-    public void onPauseStopwatch(Context context, int cocktailId) {
-        if (sStopwatch != null) {
-            sStopwatch.pause();
-        } else {
-            wtrace(context, "Invalid stopwatch");
-        }
+    public void onStopStopwatch(Context context, int cocktailId) {
+        synchronized (sLock) {
+            if (sStopwatch != null) {
+                if (getPreferences(context).startStopOnly)
+                    sStopwatch.stop();
+                else
+                    sStopwatch.pause();
+            } else {
+                wtrace(context, "Invalid stopwatch");
+            }
 
-        if (sStopwatchScheduler != null) {
-            sStopwatchScheduler.cancel();
-            sStopwatchScheduler.purge();
-            sStopwatchScheduler = null;
-        } else {
-            wtrace(context, "Invalid stopwatch scheduler");
-        }
+            if (sStopwatchScheduler != null) {
+                sStopwatchScheduler.cancel();
+                sStopwatchScheduler.purge();
+                sStopwatchScheduler = null;
+            } else {
+                wtrace(context, "Invalid stopwatch scheduler");
+            }
 
-        renderCocktail(context, cocktailId);
+            renderCocktail(context, cocktailId);
+        }
     }
 
     public void onResetStopwatch(Context context, int cocktailId) {
-        if (sStopwatch != null) {
-            sStopwatch.reset();
-        } else {
-            wtrace(context, "Invalid stopwatch");
-        }
+        synchronized (sLock) {
+            if (sStopwatch != null) {
+                sStopwatch.reset();
+            } else {
+                wtrace(context, "Invalid stopwatch");
+            }
 
-        onClearLaps(context, cocktailId);
+            onClearLaps(context, cocktailId);
+        }
     }
 
     public void onClearLaps(Context context, int cocktailId) {
-        EdgeSinglePlusLapsService.clearLaps();
+        synchronized (sLock) {
+            EdgeSinglePlusLapsService.clearLaps();
 
-        invalidateHelperView(context, cocktailId);
-        renderCocktail(context, cocktailId);
+            invalidateHelperView(context, cocktailId);
+            renderCocktail(context, cocktailId);
+        }
     }
 
     public void onClearTimes(Context context, int cocktailId) {
-//        EdgeSinglePlusLapsService.clearLaps();
-        // ...
+        synchronized (sLock) {
+            //        EdgeSinglePlusLapsService.clearLaps();
+            // ...
 
-        invalidateHelperView(context, cocktailId);
-        renderCocktail(context, cocktailId);
+            invalidateHelperView(context, cocktailId);
+            renderCocktail(context, cocktailId);
+        }
     }
 
     public void onTabLaps(Context context, int cocktailId) {
-        sTab = Tab.Laps;
-        renderCocktail(context, cocktailId);
+        synchronized (sLock) {
+            sTab = Tab.Laps;
+            renderCocktail(context, cocktailId);
+        }
     }
 
     public void onTabTimes(Context context, int cocktailId) {
-        sTab = Tab.Times;
-        renderCocktail(context, cocktailId);
+        synchronized (sLock) {
+            sTab = Tab.Times;
+            renderCocktail(context, cocktailId);
+        }
     }
-
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        sPreferencesChanged = true;
-        i(null, "Detected preferences change");
+        synchronized (sLock) {
+            i(null, "Detected preferences change");
+            sPreferencesChanged = true;
+            // defer preference reloading to onVisibilityChange
+        }
+    }
+
+    private static Prefs getPreferences(Context context) {
+        synchronized (sLock) {
+            d(context, "Reloading and caching preferences");
+
+            if (sPreferences == null || sPreferencesChanged) {
+                sPreferencesChanged = false;
+                sPreferences = reloadPreferences(context);
+            }
+
+            return sPreferences;
+        }
+    }
+
+    private static Prefs reloadPreferences(Context context) {
+        Prefs prefs = new Prefs();
+
+        prefs.largeDisplay = PreferencesUtils.getBool(context,
+                R.string.pref_large_display_key, R.bool.pref_large_display_default_value);
+        prefs.history = PreferencesUtils.getBool(context,
+                R.string.pref_history_key, R.bool.pref_history_default_value);
+        prefs.laps = PreferencesUtils.getBool(context,
+                R.string.pref_laps_key, R.bool.pref_large_display_default_value);
+        prefs.startStopOnly = PreferencesUtils.getBool(context,
+                R.string.pref_startstop_only_key, R.bool.pref_startstop_only_default_value);
+        prefs.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
+                R.string.pref_theme_key, R.string.pref_theme_default_value));
+
+        i(context, "Large display: " + prefs.largeDisplay);
+        i(context, "History: " + prefs.history);
+        i(context, "Laps: " + prefs.laps);
+        i(context, "Star/Stop only : " + prefs.startStopOnly);
+        i(context, "Theme: " + prefs.theme);
+
+        return prefs;
     }
 
     private void renderCocktail(Context context, int cocktailId) {
         // Reload preference if those are changed
-        if (sPreferences == null || sPreferencesChanged) {
-            sPreferencesChanged = false;
-            reloadPreferences(context);
-        }
+        Prefs prefs = getPreferences(context);
 
         // Detect current state
         Stopwatch.State state;
@@ -361,7 +417,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         RemoteViews sHelperView = createHelperView(context, cocktailId);
 
         // Update UI: display
-        if (!sPreferences.largeDisplay) {
+        if (!prefs.largeDisplay) {
             // inline
             sPanelView.setViewVisibility(R.id.displayInlineText, View.VISIBLE);
             sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.GONE);
@@ -412,14 +468,22 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         sPanelView.setViewVisibility(R.id.pausedButtons, pausedButtonsVisibility);
 
         // Update UI: buttons
-        sPanelView.setViewVisibility(R.id.lapButton, sPreferences.laps ? View.VISIBLE : View.GONE);
+        sPanelView.setViewVisibility(R.id.lapButton, prefs.laps ? View.VISIBLE : View.GONE);
+
+        if (prefs.startStopOnly) {
+            sPanelView.setViewVisibility(R.id.resumeButton, View.GONE);
+            sPanelView.setViewVisibility(R.id.resetButton, View.GONE);
+        } else {
+            sPanelView.setViewVisibility(R.id.resumeButton, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.resetButton, View.VISIBLE);
+        }
 
         // Update UI: theme
         int textColor;
         int panelUpperColorRes;
         int panelLowerColorRes;
 
-        if (sPreferences.theme == Prefs.Theme.Light) {
+        if (prefs.theme == Prefs.Theme.Light) {
             textColor = ResourcesUtils.getColor(context, R.color.colorTextDark);
             panelUpperColorRes = R.color.colorLightBackground;
             panelLowerColorRes = R.color.colorLightBackgroundLighter;
@@ -439,7 +503,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         // Update UI: laps
         sHelperView.setViewVisibility(
             R.id.helperContainer,
-                (sPreferences.laps && EdgeSinglePlusLapsService.getLapsCount() > 0) ?
+                (prefs.laps && EdgeSinglePlusLapsService.getLapsCount() > 0) ?
                         View.VISIBLE : View.GONE
         );
 
@@ -462,34 +526,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             w(context, "Unknown tab mode: " + sTab);
         }
 
-
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
     }
 
-
     private void invalidateHelperView(Context context, int cocktailId) {
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
-    }
-
-    private void reloadPreferences(Context context) {
-        d(context, "Reloading and caching preferences");
-
-        if (sPreferences == null)
-            sPreferences = new Prefs();
-
-        sPreferences.largeDisplay = PreferencesUtils.getBool(context,
-                R.string.pref_large_display_key, R.bool.pref_large_display_default_value);
-        sPreferences.history = PreferencesUtils.getBool(context,
-                R.string.pref_history_key, R.bool.pref_history_default_value);
-        sPreferences.laps = PreferencesUtils.getBool(context,
-                R.string.pref_laps_key, R.bool.pref_large_display_default_value);
-        sPreferences.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
-                R.string.pref_theme_key, R.string.pref_theme_default_value));
-
-        i(context, "Large display: " + sPreferences.largeDisplay);
-        i(context, "History: " + sPreferences.history);
-        i(context, "Laps: " + sPreferences.laps);
-        i(context, "Theme: " + sPreferences.theme);
     }
 
 

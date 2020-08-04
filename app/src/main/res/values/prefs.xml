@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pref_category_appearance">Appearance</string>
-    <string name="pref_category_history">History</string>
-    <string name="pref_category_laps">Laps</string>
+    <string name="pref_category_times">Times</string>
+    <string name="pref_category_stopwatch">Stopwatch</string>
 
     <!-- pref_large_display -->
     <string name="pref_large_display_key">pref_large_display</string>
@@ -35,7 +35,13 @@
     <!-- pref_laps -->
     <string name="pref_laps_key">pref_laps</string>
     <string name="pref_laps_title">Laps</string>
-    <string name="pref_laps_desc">Enable LAPS button and store laps</string>
+    <string name="pref_laps_desc">Store laps of the current time</string>
     <bool name="pref_laps_default_value">true</bool>
+
+    <!-- pref_startstop_only -->
+    <string name="pref_startstop_only_key">pref_pause</string>
+    <string name="pref_startstop_only_title">START/STOP only</string>
+    <string name="pref_startstop_only_desc">Show only START/STOP buttons (instead of PAUSE/RESUME/RESET)</string>
+    <bool name="pref_startstop_only_default_value">false</bool>
 
 </resources>

@@ -24,7 +24,7 @@
                 <intent-filter>
                     <action android:name="com.samsung.android.cocktail.v2.action.COCKTAIL_UPDATE" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_START_STOPWATCH" />
-                    <action android:name="org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_STOP_STOPWATCH" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH" />
