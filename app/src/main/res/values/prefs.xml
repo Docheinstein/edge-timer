@@ -29,7 +29,7 @@
     <!-- pref_history -->
     <string name="pref_history_key">pref_history</string>
     <string name="pref_history_title">History</string>
-    <string name="pref_history_desc">Store times</string>
+    <string name="pref_history_desc">Store all the times</string>
     <bool name="pref_history_default_value">true</bool>
 
     <!-- pref_laps -->
@@ -37,6 +37,12 @@
     <string name="pref_laps_title">Laps</string>
     <string name="pref_laps_desc">Store laps of the current time</string>
     <bool name="pref_laps_default_value">true</bool>
+
+    <!-- pref_centiseconds -->
+    <string name="pref_centiseconds_key">pref_centiseconds</string>
+    <string name="pref_centiseconds_title">Decimals</string>
+    <string name="pref_centiseconds_title_desc">Show decimals for the stopwatch display (more UI intensive)</string>
+    <bool name="pref_centiseconds_default_value">true</bool>
 
     <!-- pref_startstop_only -->
     <string name="pref_startstop_only_key">pref_pause</string>

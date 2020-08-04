@@ -38,6 +38,12 @@
             android:title="@string/pref_category_stopwatch">
 
         <CheckBoxPreference
+                android:defaultValue="@bool/pref_centiseconds_default_value"
+                android:key="@string/pref_centiseconds_key"
+                android:title="@string/pref_centiseconds_title"
+                android:summary="@string/pref_centiseconds_title_desc"/>
+
+        <CheckBoxPreference
                 android:defaultValue="@bool/pref_startstop_only_default_value"
                 android:key="@string/pref_startstop_only_key"
                 android:title="@string/pref_startstop_only_title"

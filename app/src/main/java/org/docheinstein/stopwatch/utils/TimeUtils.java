@@ -26,6 +26,10 @@ public class TimeUtils {
         public String toMinutesSecondsCentiseconds() {
             return toMinutesSecondsCentiseconds(true);
         }
+
+        public String toMinutesSeconds() {
+            return StringUtils.format("%02d.%02d", minutes, seconds);
+        }
     }
 
     public static String getCurrentDatetime(String fmt) {

@@ -15,27 +15,27 @@ import org.docheinstein.stopwatch.utils.TimeUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EdgeSinglePlusTimesService extends RemoteViewsService {
-    private static final String TAG = EdgeSinglePlusTimesService.class.getSimpleName();
+public class EdgeSinglePlusHistoryService extends RemoteViewsService {
+    private static final String TAG = EdgeSinglePlusHistoryService.class.getSimpleName();
 
-    private static class Times {
-        private static final String PREF_TIMES_COUNT_KEY = "pref_times_count_key";
-        private static final String PREF_TIMES_NTH_ = "pref_time_";
+    private static class History {
+        private static final String PREF_HISTORY_COUNT_KEY = "pref_history_count_key";
+        private static final String PREF_HISTORY_NTH_ = "pref_history_";
 
         private final Context mContext;
 
-        private List<String> mTimes;
+        private List<String> mHistory;
 
-        public Times(Context context) {
+        public History(Context context) {
             mContext = context;
             // Load times from preferences
-            int timesCount = PreferencesUtils.getInt(mContext, PREF_TIMES_COUNT_KEY);
-            d(context, "Will load " + timesCount + " times");
-            mTimes = new ArrayList<>(timesCount);
+            int timesCount = PreferencesUtils.getInt(mContext, PREF_HISTORY_COUNT_KEY);
+            d(context, "Will load " + timesCount + " times from history");
+            mHistory = new ArrayList<>(timesCount);
             for (int i = 0; i < timesCount; i++) {
-                String displayTime = PreferencesUtils.getString(context, PREF_TIMES_NTH_ + i);
+                String displayTime = PreferencesUtils.getString(context, PREF_HISTORY_NTH_ + i);
                 if (StringUtils.isValid(displayTime))
-                    mTimes.add(displayTime);
+                    mHistory.add(displayTime);
                 else
                     w(context, "Invalid display time at position " + i + "/" + timesCount);
             }
@@ -43,64 +43,64 @@ public class EdgeSinglePlusTimesService extends RemoteViewsService {
 
         public void add(long time) {
             String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
-            int idx = mTimes.size();
+            int idx = mHistory.size();
             d(null, "Adding time '" + displayTime + "' at position " + idx);
-            mTimes.add(displayTime);
+            mHistory.add(displayTime);
             PreferencesUtils.getWriter(mContext)
-                    .putString(PREF_TIMES_NTH_ + idx, displayTime)
-                    .putInt(PREF_TIMES_COUNT_KEY, mTimes.size())
+                    .putString(PREF_HISTORY_NTH_ + idx, displayTime)
+                    .putInt(PREF_HISTORY_COUNT_KEY, mHistory.size())
                     .apply();
         }
 
         public void clear() {
             d(null, "Clearing times");
-            mTimes.clear();
-            PreferencesUtils.setInt(mContext, PREF_TIMES_COUNT_KEY, mTimes.size());
+            mHistory.clear();
+            PreferencesUtils.setInt(mContext, PREF_HISTORY_COUNT_KEY, mHistory.size());
         }
 
         public int count() {
-            return mTimes.size();
+            return mHistory.size();
         }
 
         public String get(int position) {
-            return mTimes.get(position);
+            return mHistory.get(position);
         }
     }
 
-    private static Times sTimes;
+    private static History sHistory;
 
-    public static void addTime(Context context, long time) {
-        getTimes(context).add(time);
+    public static void addHistoryTime(Context context, long time) {
+        getHistory(context).add(time);
     }
 
-    public static void clearTimes(Context context) {
-        getTimes(context).clear();
+    public static void clearHistory(Context context) {
+        getHistory(context).clear();
     }
 
-    public static int getTimesCount(Context context) {
-        return getTimes(context).count();
+    public static int getHistoryCount(Context context) {
+        return getHistory(context).count();
     }
 
-    public static String getTime(Context context, int position) {
-        return getTimes(context).get(position);
+    public static String getHistoryTime(Context context, int position) {
+        return getHistory(context).get(position);
     }
 
-    private static Times getTimes(Context context) {
-        if (sTimes == null)
-            sTimes = new Times(context);
-        return sTimes;
+    private static History getHistory(Context context) {
+        if (sHistory == null)
+            sHistory = new History(context);
+        return sHistory;
     }
 
     @Override
     public RemoteViewsFactory onGetViewFactory(Intent intent) {
-        return new CocktailSinglePlusTimesViewFactory(intent);
+        return new CocktailSinglePlusHistoryViewFactory(intent);
     }
 
-    public class CocktailSinglePlusTimesViewFactory implements RemoteViewsFactory {
+    public class CocktailSinglePlusHistoryViewFactory implements RemoteViewsFactory {
 
-        private final String TAG = CocktailSinglePlusTimesViewFactory.class.getSimpleName();
+        private final String TAG = CocktailSinglePlusHistoryViewFactory.class.getSimpleName();
 
-        public CocktailSinglePlusTimesViewFactory(Intent intent) { }
+        public CocktailSinglePlusHistoryViewFactory(Intent intent) { }
 
         @Override
         public void onCreate() {}
@@ -115,14 +115,14 @@ public class EdgeSinglePlusTimesService extends RemoteViewsService {
 
         @Override
         public int getCount() {
-            return getTimesCount(getBaseContext());
+            return getHistoryCount(getBaseContext());
         }
 
         @Override
         public RemoteViews getViewAt(int position) {
             d(null, "getViewAt: " + position);
 
-            if (position >= getTimesCount(getBaseContext())) {
+            if (position >= getHistoryCount(getBaseContext())) {
                 return null;
             }
 
@@ -130,7 +130,7 @@ public class EdgeSinglePlusTimesService extends RemoteViewsService {
                     BuildConfig.APPLICATION_ID,
                     R.layout.single_plus_helper_time_item_layout);
 
-            itemView.setTextViewText(R.id.timeItemText, getTime(getBaseContext(), position));
+            itemView.setTextViewText(R.id.timeItemText, getHistoryTime(getBaseContext(), position));
             itemView.setTextViewText(R.id.timeItemPosition,
                     StringUtils.format( "%d.", position + 1));
 

@@ -29,7 +29,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     private static final String TAG = EdgeSinglePlusReceiver.class.getSimpleName();
 
-    private static final int UPDATE_DELAY = 80;
+    // Actually should be 8 for being able to see every update,
+    // but we should avoid to stress the UI too much
+    private static final int UPDATE_DELAY_CENTISECONDS_PRECISION = 80;
+
+    private static final int UPDATE_DELAY_SECONDS_PRECISION = 200;
 
     private static final String ACTION_START_STOPWATCH = "org.docheinstein.stopwatch.ACTION_START_STOPWATCH";
     private static final String ACTION_LAP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH";
@@ -37,9 +41,9 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private static final String ACTION_RESUME_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH";
     private static final String ACTION_RESET_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH";
     private static final String ACTION_TAB_LAPS = "org.docheinstein.stopwatch.ACTION_TAB_LAPS";
-    private static final String ACTION_TAB_TIMES = "org.docheinstein.stopwatch.ACTION_TAB_TIMES";
+    private static final String ACTION_TAB_HISTORY = "org.docheinstein.stopwatch.ACTION_TAB_HISTORY";
     private static final String ACTION_CLEAR_LAPS = "org.docheinstein.stopwatch.ACTION_CLEAR_LAPS";
-    private static final String ACTION_CLEAR_TIMES = "org.docheinstein.stopwatch.ACTION_CLEAR_TIMES";
+    private static final String ACTION_CLEAR_HISTORY = "org.docheinstein.stopwatch.ACTION_CLEAR_HISTORY";
 
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
 
@@ -55,10 +59,10 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private static SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener;
     private static boolean sPreferencesChanged = false;
 
-    private static Tab sTab = Tab.Times;
+    private static Tab sTab = Tab.History;
 
     private enum  Tab {
-        Times,
+        History,
         Laps
     }
 
@@ -87,6 +91,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         public boolean history;
         public boolean laps;
         public boolean startStopOnly;
+        public boolean centiseconds;
         public Theme theme;
     };
 
@@ -126,14 +131,14 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             case ACTION_CLEAR_LAPS:
                 onClearLaps(context, cocktailId);
                 break;
-            case ACTION_CLEAR_TIMES:
-                onClearTimes(context, cocktailId);
+            case ACTION_CLEAR_HISTORY:
+                onClearHistory(context, cocktailId);
                 break;
             case ACTION_TAB_LAPS:
                 onTabLaps(context, cocktailId);
                 break;
-            case ACTION_TAB_TIMES:
-                onTabTimes(context, cocktailId);
+            case ACTION_TAB_HISTORY:
+                onTabHistory(context, cocktailId);
                 break;
             default:
                 super.onReceive(context, intent);
@@ -208,17 +213,17 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         setViewAction(context, helperView, cocktailId, R.id.lapsClearButton,
                 EdgeSinglePlusReceiver.ACTION_CLEAR_LAPS);
 
-        setViewAction(context, helperView, cocktailId, R.id.timesClearButton,
-                EdgeSinglePlusReceiver.ACTION_CLEAR_TIMES);
+        setViewAction(context, helperView, cocktailId, R.id.historyClearButton,
+                EdgeSinglePlusReceiver.ACTION_CLEAR_HISTORY);
 
         setViewAction(context, helperView, cocktailId, R.id.helperTabLapsHeader,
                 EdgeSinglePlusReceiver.ACTION_TAB_LAPS);
 
-        setViewAction(context, helperView, cocktailId, R.id.helperTabTimesHeader,
-                EdgeSinglePlusReceiver.ACTION_TAB_TIMES);
+        setViewAction(context, helperView, cocktailId, R.id.helperTabHistoryHeader,
+                EdgeSinglePlusReceiver.ACTION_TAB_HISTORY);
 
         helperView.setRemoteAdapter(R.id.lapsList, new Intent(context, EdgeSinglePlusLapsService.class));
-        helperView.setRemoteAdapter(R.id.timesList, new Intent(context, EdgeSinglePlusTimesService.class));
+        helperView.setRemoteAdapter(R.id.historyList, new Intent(context, EdgeSinglePlusHistoryService.class));
 
         return helperView;
     }
@@ -251,12 +256,16 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 sStopwatch.reset();
 
             sStopwatch.start();
+
+            long updateDelay = getPreferences(context).centiseconds ?
+                    UPDATE_DELAY_CENTISECONDS_PRECISION : UPDATE_DELAY_SECONDS_PRECISION;
+
             sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
                     renderCocktail(context, cocktailId);
                 }
-            }, 0, UPDATE_DELAY);
+            }, 0, updateDelay);
 
             renderCocktail(context, cocktailId);
         }
@@ -290,8 +299,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                     invalidateLapsView(context, cocktailId);
 
                     if (addTime(context, sStopwatch.elapsed())) {
-                        sTab = Tab.Times; // auto switch to TIMES tab
-                        invalidateTimesView(context, cocktailId);
+                        sTab = Tab.History; // auto switch to HISTORY tab
+                        invalidateHistoryView(context, cocktailId);
                     }
                 }
                 else {
@@ -323,8 +332,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 invalidateLapsView(context, cocktailId);
 
                 if (addTime(context, elapsed)) {
-                    sTab = Tab.Times; // auto switch to TIMES tab
-                    invalidateTimesView(context, cocktailId);
+                    sTab = Tab.History; // auto switch to HISTORY tab
+                    invalidateHistoryView(context, cocktailId);
                 }
             } else {
                 wtrace(context, "Invalid stopwatch");
@@ -343,11 +352,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
     }
 
-    public void onClearTimes(Context context, int cocktailId) {
+    public void onClearHistory(Context context, int cocktailId) {
         synchronized (sLock) {
-            EdgeSinglePlusTimesService.clearTimes(context);
+            EdgeSinglePlusHistoryService.clearHistory(context);
 
-            invalidateTimesView(context, cocktailId);
+            invalidateHistoryView(context, cocktailId);
             renderCocktail(context, cocktailId);
         }
     }
@@ -359,9 +368,9 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
     }
 
-    public void onTabTimes(Context context, int cocktailId) {
+    public void onTabHistory(Context context, int cocktailId) {
         synchronized (sLock) {
-            sTab = Tab.Times;
+            sTab = Tab.History;
             renderCocktail(context, cocktailId);
         }
     }
@@ -377,7 +386,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     private boolean addTime(Context context, long time) {
         if (getPreferences(context).history) {
-            EdgeSinglePlusTimesService.addTime(context, time);
+            EdgeSinglePlusHistoryService.addHistoryTime(context, time);
             return true;
         }
         return false;
@@ -414,6 +423,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 R.string.pref_laps_key, R.bool.pref_large_display_default_value);
         prefs.startStopOnly = PreferencesUtils.getBool(context,
                 R.string.pref_startstop_only_key, R.bool.pref_startstop_only_default_value);
+        prefs.centiseconds = PreferencesUtils.getBool(context,
+                R.string.pref_centiseconds_key, R.bool.pref_centiseconds_default_value);
         prefs.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
                 R.string.pref_theme_key, R.string.pref_theme_default_value));
 
@@ -461,8 +472,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             sPanelView.setViewVisibility(R.id.displayInlineText, View.VISIBLE);
             sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.GONE);
 
-            sPanelView.setTextViewText(R.id.displayInlineText,
-                    timesnap.toMinutesSecondsCentiseconds());
+            String displayTime = prefs.centiseconds ?
+                    timesnap.toMinutesSecondsCentiseconds() :
+                    timesnap.toMinutesSeconds();
+
+            sPanelView.setTextViewText(R.id.displayInlineText, displayTime);
         }
         else {
             // multiline
@@ -480,8 +494,15 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
             sPanelView.setTextViewText(R.id.displayLargeSecondsLineText,
                     StringUtils.format("%02d", timesnap.seconds));
-            sPanelView.setTextViewText(R.id.displayLargeCentisLineText,
+
+            if (prefs.centiseconds) {
+                sPanelView.setViewVisibility(R.id.displayLargeCentisLineText, View.VISIBLE);
+                sPanelView.setTextViewText(R.id.displayLargeCentisLineText,
                     StringUtils.format("%02d", timesnap.millis / 10));
+            } else {
+                sPanelView.setViewVisibility(R.id.displayLargeCentisLineText, View.GONE);
+            }
+
         }
 
 
@@ -540,9 +561,9 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
         // Update UI: helper/tabs
         boolean lapsIsFilled = prefs.laps && EdgeSinglePlusLapsService.getLapsCount() > 0;
-        boolean timesIsFilled = prefs.history && EdgeSinglePlusTimesService.getTimesCount(context) > 0;
+        boolean historyIsFilled = prefs.history && EdgeSinglePlusHistoryService.getHistoryCount(context) > 0;
         int tabsEnabledCount = (prefs.laps ? 1 : 0) + (prefs.history ? 1 : 0);
-        int tabsFilledCount = (lapsIsFilled ? 1 : 0) + (timesIsFilled ? 1 : 0);
+        int tabsFilledCount = (lapsIsFilled ? 1 : 0) + (historyIsFilled ? 1 : 0);
 
         sHelperView.setViewVisibility(R.id.helperContainer, tabsFilledCount > 0 ? View.VISIBLE : View.GONE);
         sHelperView.setViewVisibility(R.id.tabsDivider, tabsEnabledCount > 1 ? View.VISIBLE : View.GONE);
@@ -560,35 +581,35 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.GONE);
         }
 
-        // Update UI: times
+        // Update UI: history
         if (prefs.history) {
-            sHelperView.setViewVisibility(R.id.timesList, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.timesContainer, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.helperTabTimesHeader, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.historyList, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
+            sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.VISIBLE);
         } else {
-            sHelperView.setViewVisibility(R.id.timesList, View.GONE);
-            sHelperView.setViewVisibility(R.id.timesContainer, View.GONE);
-            sHelperView.setViewVisibility(R.id.helperTabTimesHeader, View.GONE);
+            sHelperView.setViewVisibility(R.id.historyList, View.GONE);
+            sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
+            sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.GONE);
         }
 
         // Update UI: tab
         // Ensure the tab is appropriate
-        if (sTab == Tab.Times && !prefs.history)
+        if (sTab == Tab.History && !prefs.history)
             sTab = Tab.Laps;
         if (sTab == Tab.Laps && !prefs.laps)
-            sTab = Tab.Times;
+            sTab = Tab.History;
 
-        if (sTab == Tab.Times) {
-            sHelperView.setViewVisibility(R.id.timesContainer, View.VISIBLE);
+        if (sTab == Tab.History) {
+            sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
             sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
-            sHelperView.setTextColor(R.id.helperTabTimesHeader,
+            sHelperView.setTextColor(R.id.helperTabHistoryHeader,
                     ResourcesUtils.getColor(context, R.color.colorAccent));
             sHelperView.setTextColor(R.id.helperTabLapsHeader,
                     ResourcesUtils.getColor(context, R.color.colorTextMid));
         } else if (sTab == Tab.Laps) {
-            sHelperView.setViewVisibility(R.id.timesContainer, View.GONE);
+            sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
             sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
-            sHelperView.setTextColor(R.id.helperTabTimesHeader,
+            sHelperView.setTextColor(R.id.helperTabHistoryHeader,
                     ResourcesUtils.getColor(context, R.color.colorTextMid));
             sHelperView.setTextColor(R.id.helperTabLapsHeader,
                     ResourcesUtils.getColor(context, R.color.colorAccent));
@@ -603,8 +624,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
     }
 
-    private void invalidateTimesView(Context context, int cocktailId) {
-        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.timesList);
+    private void invalidateHistoryView(Context context, int cocktailId) {
+        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.historyList);
     }
 
     private static void etrace(Context ctx, String s) { Logger.getInstance(ctx).etrace(TAG, s); }

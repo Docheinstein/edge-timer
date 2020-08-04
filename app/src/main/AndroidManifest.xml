@@ -29,9 +29,9 @@
                     <action android:name="org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_RESET_STOPWATCH" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_TAB_LAPS" />
-                    <action android:name="org.docheinstein.stopwatch.ACTION_TAB_TIMES" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_TAB_HISTORY" />
                     <action android:name="org.docheinstein.stopwatch.ACTION_CLEAR_LAPS" />
-                    <action android:name="org.docheinstein.stopwatch.ACTION_CLEAR_TIMES" />
+                    <action android:name="org.docheinstein.stopwatch.ACTION_CLEAR_HISTORY" />
                 </intent-filter>
 
                 <meta-data
@@ -44,7 +44,7 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"/>
 
         <service
-            android:name=".edge.EdgeSinglePlusTimesService"
+            android:name=".edge.EdgeSinglePlusHistoryService"
             android:permission="android.permission.BIND_REMOTEVIEWS"/>
 
     </application>

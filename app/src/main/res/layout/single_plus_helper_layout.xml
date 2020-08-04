@@ -12,21 +12,23 @@
             android:id="@+id/helperTabSelector"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
 
 
         <TextView
-                android:id="@+id/helperTabTimesHeader"
+                android:id="@+id/helperTabHistoryHeader"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:fontFamily="sans-serif-light"
                 android:gravity="center_horizontal"
-                android:padding="8dp"
-                android:text="@string/times_tab_header"
+                android:padding="6dp"
+                android:text="@string/history_tab_header"
                 android:textAlignment="center"
                 android:textColor="@color/colorAccent"
-                android:textSize="18sp" />
+                android:textSize="16sp" />
 
         <ImageView
                 android:id="@+id/tabsDivider"
@@ -41,11 +43,11 @@
                 android:layout_weight="1"
                 android:fontFamily="sans-serif-light"
                 android:gravity="center_horizontal"
-                android:padding="8dp"
+                android:padding="6dp"
                 android:text="@string/laps_tab_header"
                 android:textAlignment="center"
                 android:textColor="@color/colorTextMid"
-                android:textSize="18sp" />
+                android:textSize="16sp" />
 
     </LinearLayout>
 
@@ -102,12 +104,12 @@
                 android:text="@string/clear_laps"
                 android:textAlignment="center"
                 android:textColor="@color/colorTextRed"
-                android:textSize="18sp" />
+                android:textSize="16sp" />
 
     </LinearLayout>
 
     <LinearLayout
-            android:id="@+id/timesContainer"
+            android:id="@+id/historyContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
@@ -118,23 +120,23 @@
                 android:layout_weight="1">
 
             <ImageView
-                    android:id="@+id/timesDividerTop"
+                    android:id="@+id/historyDividerTop"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_alignParentTop="true"
                     android:background="@color/colorTextLight" />
 
             <ListView
-                    android:id="@+id/timesList"
+                    android:id="@+id/historyList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_above="@id/timesDividerBottom"
-                    android:layout_below="@id/timesDividerTop"
+                    android:layout_above="@id/historyDividerBottom"
+                    android:layout_below="@id/historyDividerTop"
                     android:dividerHeight="0dp"
                     android:transcriptMode="alwaysScroll" />
 
             <ImageView
-                    android:id="@+id/timesDividerBottom"
+                    android:id="@+id/historyDividerBottom"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_alignParentBottom="true"
@@ -143,16 +145,16 @@
         </RelativeLayout>
 
         <TextView
-                android:id="@+id/timesClearButton"
+                android:id="@+id/historyClearButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-light"
                 android:gravity="center_horizontal"
                 android:padding="8dp"
-                android:text="@string/clear_times"
+                android:text="@string/clear_history"
                 android:textAlignment="center"
                 android:textColor="@color/colorTextRed"
-                android:textSize="18sp" />
+                android:textSize="16sp" />
 
     </LinearLayout>
 
