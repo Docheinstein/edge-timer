@@ -1,4 +1,4 @@
-# Stopwatch Edge
+# Edge Stopwatch
 
 Stopwatch (chronometer) for Samsung devices supporting the Edge Panel feature (S7, S8, ...).
 * Classical features: START/PAUSE/RESUME/STOP/RESET buttons
