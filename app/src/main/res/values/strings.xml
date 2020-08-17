@@ -1,10 +1,11 @@
 <resources>
-    <string name="edge_label">Edge Stopwatch</string>
-    <string name="edge_description">Edge Stopwatch</string>
+    <string name="edge_label" translatable="false">Edge Stopwatch</string>
+    <string name="edge_description" translatable="false">Edge Stopwatch</string>
 
-    <string name="app_name">Edge Stopwatch</string>
-    <string name="default_display_time">00.00</string>
+    <string name="app_name" translatable="false">Edge Stopwatch</string>
+    <string name="default_display_time" translatable="false">00.00</string>
     <string name="start_stopwatch">Start</string>
+    <string name="pause_stopwatch">Pause</string>
     <string name="lap_stopwatch">Lap</string>
     <string name="resume_stopwatch">Resume</string>
     <string name="stop_stopwatch">Stop</string>

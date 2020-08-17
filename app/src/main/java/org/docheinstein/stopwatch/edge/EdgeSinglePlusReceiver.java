@@ -36,6 +36,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     private static final int UPDATE_DELAY_SECONDS_PRECISION = 200;
 
     private static final String ACTION_START_STOPWATCH = "org.docheinstein.stopwatch.ACTION_START_STOPWATCH";
+    private static final String ACTION_PAUSE_STOPWATCH = "org.docheinstein.stopwatch.ACTION_PAUSE_STOPWATCH";
     private static final String ACTION_LAP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_LAP_STOPWATCH";
     private static final String ACTION_STOP_STOPWATCH = "org.docheinstein.stopwatch.ACTION_STOP_STOPWATCH";
     private static final String ACTION_RESUME_STOPWATCH = "org.docheinstein.stopwatch.ACTION_RESUME_STOPWATCH";
@@ -119,6 +120,10 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         switch (action) {
             case ACTION_START_STOPWATCH:
                 onStartStopwatch(context, cocktailId, true);
+                break;
+            case ACTION_PAUSE_STOPWATCH:
+                onPauseStopwatch(context, cocktailId);
+                break;
             case ACTION_RESUME_STOPWATCH:
                 onStartStopwatch(context, cocktailId, false);
                 break;
@@ -199,6 +204,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
         setViewAction(context, panelView, cocktailId, R.id.startButton,
                 EdgeSinglePlusReceiver.ACTION_START_STOPWATCH);
+        setViewAction(context, panelView, cocktailId, R.id.pauseButton,
+                EdgeSinglePlusReceiver.ACTION_PAUSE_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.lapButton,
                 EdgeSinglePlusReceiver.ACTION_LAP_STOPWATCH);
         setViewAction(context, panelView, cocktailId, R.id.resumeButton,
@@ -276,6 +283,9 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 }
             }, 0, updateDelay);
 
+            EdgeSinglePlusLapsService.clearLaps();
+            invalidateLapsView(context, cocktailId);
+
             renderCocktail(context, cocktailId);
         }
     }
@@ -298,22 +308,43 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
     }
 
+    public void onPauseStopwatch(Context context, int cocktailId) {
+        synchronized (sLock) {
+            if (sStopwatch != null) {
+                if (!getPreferences(context).startStopOnly) {
+                    sStopwatch.pause();
+                }
+                else {
+                    Logger.w(context, TAG, "onPauseStopwatch called while startStopOnly is true");
+                }
+            } else {
+                Logger.wtrace(context, TAG, "Invalid stopwatch");
+            }
+
+            if (sStopwatchScheduler != null) {
+                sStopwatchScheduler.cancel();
+                sStopwatchScheduler.purge();
+                sStopwatchScheduler = null;
+            } else {
+                Logger.wtrace(context, TAG, "Invalid stopwatch scheduler");
+            }
+
+            renderCocktail(context, cocktailId);
+        }
+    }
+
     public void onStopStopwatch(Context context, int cocktailId) {
         synchronized (sLock) {
             if (sStopwatch != null) {
                 if (getPreferences(context).startStopOnly) {
                     sStopwatch.stop();
 
-                    EdgeSinglePlusLapsService.clearLaps();
-                    invalidateLapsView(context, cocktailId);
-
                     if (addTime(context, sStopwatch.elapsed())) {
                         sTab = Tab.History; // auto switch to HISTORY tab
                         invalidateHistoryView(context, cocktailId);
                     }
-                }
-                else {
-                    sStopwatch.pause();
+                } else {
+                    Logger.w(context, TAG, "onStopStopwatch called while startStopOnly is false");
                 }
             } else {
                 Logger.wtrace(context, TAG, "Invalid stopwatch");
@@ -337,9 +368,6 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 long elapsed = sStopwatch.elapsed();
                 sStopwatch.reset();
 
-                EdgeSinglePlusLapsService.clearLaps();
-                invalidateLapsView(context, cocktailId);
-
                 if (addTime(context, elapsed)) {
                     sTab = Tab.History; // auto switch to HISTORY tab
                     invalidateHistoryView(context, cocktailId);
@@ -355,7 +383,6 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     public void onClearLaps(Context context, int cocktailId) {
         synchronized (sLock) {
             EdgeSinglePlusLapsService.clearLaps();
-
             invalidateLapsView(context, cocktailId);
             renderCocktail(context, cocktailId);
         }
@@ -463,6 +490,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
 
         // Create views, if needed
+        // ^^ This would be ideal, but for some reason something freezes
+        // if we try to avoid to recreate the views each time
         /*
         if (sPanelView == null) {
             sPanelView = createPanelView(context, cocktailId);
@@ -516,34 +545,24 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
 
         // Update UI: buttons container
-        int notRunningButtonsVisibility = View.GONE;
-        int runningButtonsVisibility = View.GONE;
-        int pausedButtonsVisibility = View.GONE;
-
-        switch (state) {
-            case None:
-                notRunningButtonsVisibility = View.VISIBLE;
-                break;
-            case Running:
-                runningButtonsVisibility = View.VISIBLE;
-                break;
-            case Paused:
-                pausedButtonsVisibility = View.VISIBLE;
-                break;
-        }
-
-        sPanelView.setViewVisibility(R.id.notRunningButtons, notRunningButtonsVisibility);
-        sPanelView.setViewVisibility(R.id.runningButtons, runningButtonsVisibility);
-        sPanelView.setViewVisibility(R.id.pausedButtons, pausedButtonsVisibility);
+        sPanelView.setViewVisibility(R.id.notRunningButtons,
+                state == Stopwatch.State.None ? View.VISIBLE : View.GONE);
+        sPanelView.setViewVisibility(R.id.runningButtons,
+                state == Stopwatch.State.Running ? View.VISIBLE : View.GONE);
+        sPanelView.setViewVisibility(R.id.pausedButtons,
+                state == Stopwatch.State.Paused ? View.VISIBLE : View.GONE);
 
         // Update UI: start/stop only?
-
         if (prefs.startStopOnly) {
             sPanelView.setViewVisibility(R.id.resumeButton, View.GONE);
             sPanelView.setViewVisibility(R.id.resetButton, View.GONE);
+            sPanelView.setViewVisibility(R.id.pauseButton, View.GONE);
+            sPanelView.setViewVisibility(R.id.stopButton, View.VISIBLE);
         } else {
             sPanelView.setViewVisibility(R.id.resumeButton, View.VISIBLE);
             sPanelView.setViewVisibility(R.id.resetButton, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.pauseButton, View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.stopButton, View.GONE);
         }
 
         // Update UI: theme

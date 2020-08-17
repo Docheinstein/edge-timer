@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Edge Stopwatch</string>
+    <string name="pref_category_appearance">Aspetto</string>
+    <string name="pref_category_times">Tempi</string>
+    <string name="pref_category_stopwatch">Cronometro</string>
+    <string name="pref_large_display_title">Schermo largo</string>
+    <string name="pref_large_display_desc">Usa un dimensione maggiore per i caratteri e mostra il display su più linee</string>
+    <string name="pref_theme_title">Tema</string>
+    <string name="pref_history_title">Cronologia</string>
+    <string name="pref_history_desc">Memorizza tutti i tempi</string>
+    <string name="pref_laps_title">Parziali</string>
+    <string name="pref_laps_desc">Memorizza i parziali dell\'ultimo tempo</string>
+    <string name="pref_centiseconds_title">Decimali</string>
+    <string name="pref_centiseconds_title_desc">Mostra i decimali</string>
+    <string name="pref_startstop_only_title">Solo AVVIA/FERMA</string>
+    <string name="pref_startstop_only_desc">Mostra solo i pulsanti AVVIA e FERMA (invece che PAUSA, RIPRENDI e RIPRISTINA)</string>
+    <string name="start_stopwatch">Avvia</string>
+    <string name="pause_stopwatch">Pausa</string>
+    <string name="lap_stopwatch">Parziale</string>
+    <string name="resume_stopwatch">Riprendi</string>
+    <string name="stop_stopwatch">Ferma</string>
+    <string name="reset_stopwatch">Ripristina</string>
+    <string name="clear_laps">CANCELLA PARZIALI</string>
+    <string name="clear_history">CANCELLA CRONOLOGIA</string>
+    <string name="history_tab_header">CRONOLOGIA</string>
+    <string name="laps_tab_header">PARZIALI</string>
+    <string name="pref_theme_value_light">Chiaro</string>
+    <string name="pref_theme_value_dark">Scuro</string>
+</resources>

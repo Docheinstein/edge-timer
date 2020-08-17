@@ -24,7 +24,8 @@
                 android:textAlignment="center"
                 android:textColor="@color/colorTextLight"
                 android:textSize="@dimen/stopwatch_text_size"
-                tools:text="00:00.00" />
+                tools:text="00:00.00"
+                tools:visibility="gone" />
 
         <LinearLayout
                 android:id="@+id/displayMultilineContainer"
@@ -32,7 +33,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="36dp"
                 android:orientation="vertical"
-                android:visibility="gone">
+                android:visibility="gone"
+                tools:visibility="visible">
 
             <TextView
                     android:id="@+id/displayLargeMinutesLineText"
@@ -51,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:fontFamily="sans-serif"
+                    android:fontFamily="sans-serif-light"
                     android:text="@string/default_display_time"
                     android:textAlignment="center"
                     android:textColor="@color/colorTextLight"
@@ -118,11 +120,27 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:background="@drawable/rect_button"
-                    android:backgroundTint="@color/colorButtonOrange"
+                    android:backgroundTint="@color/colorButtonRed"
                     android:fontFamily="sans-serif-light"
                     android:paddingTop="@dimen/button_padding_y"
                     android:paddingBottom="@dimen/button_padding_y"
                     android:text="@string/stop_stopwatch"
+                    android:textColor="@color/colorTextLight"
+                    android:textSize="@dimen/button_text_size"
+                    android:visibility="visible" />
+
+            <Button
+                    android:id="@+id/pauseButton"
+                    style="@style/Widget.AppCompat.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/rect_button"
+                    android:backgroundTint="@color/colorButtonOrange"
+                    android:fontFamily="sans-serif-light"
+                    android:paddingTop="@dimen/button_padding_y"
+                    android:paddingBottom="@dimen/button_padding_y"
+                    android:text="@string/pause_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size"
                     android:visibility="visible" />

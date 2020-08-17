@@ -5,48 +5,50 @@
     <string name="pref_category_stopwatch">Stopwatch</string>
 
     <!-- pref_large_display -->
-    <string name="pref_large_display_key">pref_large_display</string>
+    <string name="pref_large_display_key" translatable="false">pref_large_display</string>
     <string name="pref_large_display_title">Large display</string>
-    <string name="pref_large_display_desc">Use a larger font for the stopwatch display (multiline)</string>
+    <string name="pref_large_display_desc">Use a larger font and show display on multiple lines</string>
     <bool name="pref_large_display_default_value">true</bool>
 
     <!-- pref_theme -->
-    <string name="pref_theme_key">pref_theme</string>
+    <string name="pref_theme_key" translatable="false">pref_theme</string>
     <string name="pref_theme_title">Theme</string>
-    <string name="pref_theme_value_light">light</string>
-    <string name="pref_theme_value_dark">dark</string>
+    <string name="pref_theme_value_light_value" translatable="false">light</string>
+    <string name="pref_theme_value_dark_value" translatable="false">dark</string>
+    <string name="pref_theme_value_light">Light</string>
+    <string name="pref_theme_value_dark">Dark</string>
     <string-array name="pref_theme_items_keys">
-        <item>Light</item>
-        <item>Dark</item>
-    </string-array>
-    <string-array name="pref_theme_items_values">
         <item>@string/pref_theme_value_light</item>
         <item>@string/pref_theme_value_dark</item>
     </string-array>
-    <string name="pref_theme_default_value">@string/pref_theme_value_dark</string>
+    <string-array name="pref_theme_items_values">
+        <item>@string/pref_theme_value_light_value</item>
+        <item>@string/pref_theme_value_dark_value</item>
+    </string-array>
+    <string name="pref_theme_default_value" translatable="false">@string/pref_theme_value_dark</string>
 
 
     <!-- pref_history -->
-    <string name="pref_history_key">pref_history</string>
+    <string name="pref_history_key" translatable="false">pref_history</string>
     <string name="pref_history_title">History</string>
     <string name="pref_history_desc">Store all the times</string>
     <bool name="pref_history_default_value">true</bool>
 
     <!-- pref_laps -->
-    <string name="pref_laps_key">pref_laps</string>
+    <string name="pref_laps_key" translatable="false">pref_laps</string>
     <string name="pref_laps_title">Laps</string>
     <string name="pref_laps_desc">Store laps of the current time</string>
     <bool name="pref_laps_default_value">true</bool>
 
     <!-- pref_centiseconds -->
-    <string name="pref_centiseconds_key">pref_centiseconds</string>
+    <string name="pref_centiseconds_key" translatable="false">pref_centiseconds</string>
     <string name="pref_centiseconds_title">Decimals</string>
-    <string name="pref_centiseconds_title_desc">Show decimals for the stopwatch display (more UI intensive)</string>
+    <string name="pref_centiseconds_title_desc">Show decimals</string>
     <bool name="pref_centiseconds_default_value">true</bool>
 
     <!-- pref_startstop_only -->
-    <string name="pref_startstop_only_key">pref_pause</string>
+    <string name="pref_startstop_only_key" translatable="false">pref_startstop_only</string>
     <string name="pref_startstop_only_title">START/STOP only</string>
-    <string name="pref_startstop_only_desc">Show only START/STOP buttons (instead of PAUSE/RESUME/RESET)</string>
+    <string name="pref_startstop_only_desc">Show only START and STOP buttons (instead of PAUSE, RESUME and RESET)</string>
     <bool name="pref_startstop_only_default_value">false</bool>
 </resources>

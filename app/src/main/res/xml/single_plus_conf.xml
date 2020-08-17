@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<cocktail-provider xmlns:android="http://schemas.android.com/apk/res/android"
+<cocktail-provider
     label="@string/edge_label"
     description="@string/edge_description"
     previewImage="@drawable/preview"

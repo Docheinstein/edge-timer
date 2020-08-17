@@ -5,8 +5,13 @@
     <dimen name="stopwatch_large_seconds_text_size">72sp</dimen>
     <dimen name="stopwatch_large_millis_text_size">50sp</dimen>
 
-    <dimen name="button_text_size">24sp</dimen>
+    <dimen name="button_text_size">20sp</dimen>
     <dimen name="button_padding_y">22dp</dimen>
 
     <dimen name="oval_button_radius">22dp</dimen>
+
+    <dimen name="tab_header_text_size">16sp</dimen>
+    <dimen name="tab_footer_text_size">16sp</dimen>
+
+    <dimen name="helper_item_text_size">16sp</dimen>
 </resources>
