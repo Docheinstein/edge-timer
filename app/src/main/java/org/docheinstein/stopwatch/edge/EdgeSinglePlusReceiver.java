@@ -254,7 +254,7 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     }
 
 
-    public void onStartStopwatch(final Context context, final int cocktailId, boolean forceRestart) {
+    public void onStartStopwatch(final Context context, final int cocktailId, boolean reset) {
         synchronized (sLock) {
             if (sStopwatch == null) {
                 Logger.d(context, TAG, "Creating sStopwatch instance");
@@ -266,8 +266,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                 sStopwatchScheduler = new Timer();
             }
 
-            if (forceRestart)
+            if (reset) {
                 sStopwatch.reset();
+                EdgeSinglePlusLapsService.clearLaps();
+                invalidateLapsView(context, cocktailId);
+            }
 
             sStopwatch.start();
 
@@ -282,9 +285,6 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
                     }
                 }
             }, 0, updateDelay);
-
-            EdgeSinglePlusLapsService.clearLaps();
-            invalidateLapsView(context, cocktailId);
 
             renderCocktail(context, cocktailId);
         }
