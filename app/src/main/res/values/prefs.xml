@@ -25,7 +25,7 @@
         <item>@string/pref_theme_value_light_value</item>
         <item>@string/pref_theme_value_dark_value</item>
     </string-array>
-    <string name="pref_theme_default_value" translatable="false">@string/pref_theme_value_dark</string>
+    <string name="pref_theme_default_value" translatable="false">@string/pref_theme_value_dark_value</string>
 
 
     <!-- pref_history -->

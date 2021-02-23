@@ -95,6 +95,35 @@ public class PreferencesUtils {
         return getReader(context).getInt(key, defaultValue);
     }
 
+    public static void setLong(Context context, @StringRes int keyId, long value) {
+        setLong(context, ResourcesUtils.getString(context, keyId), value);
+    }
+
+    public static void setLong(Context context, String key, long value) {
+        getWriter(context).putLong(key, value).apply();
+    }
+
+    public static long getLong(Context context, @StringRes int keyId, @IntegerRes int defaultValueId) {
+        return getLong_(context, keyId, ResourcesUtils.getInt(context, defaultValueId));
+    }
+
+    public static long getLong(Context context, @StringRes int keyId) {
+        return getLong_(context, keyId, 0);
+    }
+
+    public static long getLong_(Context context, @StringRes int keyId, long defaultValue) {
+        return getLong(context, ResourcesUtils.getString(context, keyId), defaultValue);
+    }
+
+    public static long getLong(Context context, String key) {
+        return getLong(context, key , 0);
+    }
+
+    public static long getLong(Context context, String key, long defaultValue) {
+        return getReader(context).getLong(key, defaultValue);
+    }
+
+
     public static SharedPreferences getReader(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context);
     }

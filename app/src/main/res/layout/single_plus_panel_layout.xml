@@ -126,8 +126,7 @@
                     android:paddingBottom="@dimen/button_padding_y"
                     android:text="@string/stop_stopwatch"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size"
-                    android:visibility="visible" />
+                    android:textSize="@dimen/button_text_size" />
 
             <Button
                     android:id="@+id/pauseButton"
@@ -142,8 +141,7 @@
                     android:paddingBottom="@dimen/button_padding_y"
                     android:text="@string/pause_stopwatch"
                     android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size"
-                    android:visibility="visible" />
+                    android:textSize="@dimen/button_text_size" />
 
         </LinearLayout>
 
@@ -178,6 +176,21 @@
                 tools:visibility="visible">
 
             <Button
+                    android:id="@+id/resetButton"
+                    style="@style/Widget.AppCompat.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/rect_button"
+                    android:backgroundTint="@color/colorButtonRed"
+                    android:fontFamily="sans-serif-light"
+                    android:paddingTop="@dimen/button_padding_y"
+                    android:paddingBottom="@dimen/button_padding_y"
+                    android:text="@string/reset_stopwatch"
+                    android:textColor="@color/colorTextLight"
+                    android:textSize="@dimen/button_text_size" />
+
+            <Button
                     android:id="@+id/resumeButton"
                     style="@style/Widget.AppCompat.Button"
                     android:layout_width="match_parent"
@@ -191,22 +204,6 @@
                     android:text="@string/resume_stopwatch"
                     android:textColor="@color/colorTextLight"
                     android:textSize="@dimen/button_text_size" />
-
-            <Button
-                    android:id="@+id/resetButton"
-                    style="@style/Widget.AppCompat.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/rect_button"
-                    android:backgroundTint="@color/colorButtonRed"
-                    android:fontFamily="sans-serif-light"
-                    android:paddingTop="@dimen/button_padding_y"
-                    android:paddingBottom="@dimen/button_padding_y"
-                    android:text="@string/reset_stopwatch"
-                    android:textColor="@color/colorTextLight"
-                    android:textSize="@dimen/button_text_size"
-                    android:visibility="visible" />
 
         </LinearLayout>
 

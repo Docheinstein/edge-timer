@@ -18,16 +18,16 @@ import java.util.List;
 public class EdgeSinglePlusHistoryService extends RemoteViewsService {
     private static final String TAG = EdgeSinglePlusHistoryService.class.getSimpleName();
 
-    private static class History {
-        private static final String PREF_HISTORY_COUNT_KEY = "pref_history_count_key";
-        private static final String PREF_HISTORY_NTH_ = "pref_history_";
+    public static final String PREF_HISTORY_COUNT = "pref_history_count";
+    public static final String PREF_HISTORY_NTH_ = "pref_history_";
 
-        private List<String> mHistory;
+    private static class History {
+        private final List<String> mHistory;
 
         public History(Context context) {
             // Load times from preferences
-            int timesCount = PreferencesUtils.getInt(context, PREF_HISTORY_COUNT_KEY);
-            Logger.d(context, TAG, "Will load " + timesCount + " times from history");
+            int timesCount = PreferencesUtils.getInt(context, PREF_HISTORY_COUNT);
+            Logger.i(context, TAG, "Will load " + timesCount + " history times from memory");
             mHistory = new ArrayList<>(timesCount);
             for (int i = 0; i < timesCount; i++) {
                 String displayTime = PreferencesUtils.getString(context, PREF_HISTORY_NTH_ + i);
@@ -41,18 +41,18 @@ public class EdgeSinglePlusHistoryService extends RemoteViewsService {
         public void add(Context context, long time) {
             String displayTime = (new TimeUtils.Timesnap(time).toMinutesSecondsCentiseconds());
             int idx = mHistory.size();
-            Logger.d(null, TAG, "Adding time '" + displayTime + "' at position " + idx);
+            Logger.i(null, TAG, "Adding time '" + displayTime + "' at position " + idx);
             mHistory.add(displayTime);
             PreferencesUtils.getWriter(context)
                     .putString(PREF_HISTORY_NTH_ + idx, displayTime)
-                    .putInt(PREF_HISTORY_COUNT_KEY, mHistory.size())
+                    .putInt(PREF_HISTORY_COUNT, mHistory.size())
                     .apply();
         }
 
         public void clear(Context context) {
-            Logger.d(null, TAG, "Clearing times");
+            Logger.i(null, TAG, "Clearing times");
             mHistory.clear();
-            PreferencesUtils.setInt(context, PREF_HISTORY_COUNT_KEY, mHistory.size());
+            PreferencesUtils.setInt(context, PREF_HISTORY_COUNT, mHistory.size());
         }
 
         public int count() {
@@ -95,7 +95,7 @@ public class EdgeSinglePlusHistoryService extends RemoteViewsService {
 
     public static class CocktailSinglePlusHistoryViewFactory implements RemoteViewsFactory {
 
-        private final String TAG = CocktailSinglePlusHistoryViewFactory.class.getSimpleName();
+        private static final String TAG = CocktailSinglePlusHistoryViewFactory.class.getSimpleName();
 
         private final Context mContext;
 
@@ -121,7 +121,7 @@ public class EdgeSinglePlusHistoryService extends RemoteViewsService {
 
         @Override
         public RemoteViews getViewAt(int position) {
-            Logger.d(null, TAG, "getViewAt: " + position);
+            Logger.v(null, TAG, "getViewAt: " + position);
 
             if (position >= getHistoryCount(mContext)) {
                 return null;

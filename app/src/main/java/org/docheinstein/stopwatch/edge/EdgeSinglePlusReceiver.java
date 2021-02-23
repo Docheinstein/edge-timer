@@ -20,12 +20,17 @@ import org.docheinstein.stopwatch.logging.Logger;
 import org.docheinstein.stopwatch.utils.PreferencesUtils;
 import org.docheinstein.stopwatch.utils.ResourcesUtils;
 import org.docheinstein.stopwatch.utils.StringUtils;
-import org.docheinstein.stopwatch.utils.TimeUtils;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements SharedPreferences.OnSharedPreferenceChangeListener {
+import static org.docheinstein.stopwatch.utils.TimeUtils.Timesnap;
+
+public class EdgeSinglePlusReceiver extends SlookCocktailProvider {
 
     private static final String TAG = EdgeSinglePlusReceiver.class.getSimpleName();
 
@@ -48,22 +53,61 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
 
     private static final String EXTRA_COCKTAIL_ID = "cocktailId";
 
+    private static final String PREF_STATE = "pref_state";
+    private static final int PREF_STATE_VALUE_NONE = 0;
+    private static final int PREF_STATE_VALUE_RUNNING = 1;
+    private static final int PREF_STATE_VALUE_PAUSED = 2;
+
+    private static final String PREF_STOPWATCH_START_TIME = "pref_start_time";
+    private static final String PREF_STOPWATCH_SAVED_TIME_AMOUNT = "pref_stopwatch_time_amount";
+
+    private static final String PREF_TAB = "pref_tab";
+    private static final int PREF_TAB_VALUE_NONE = 0;
+    private static final int PREF_TAB_VALUE_HISTORY = 1;
+    private static final int PREF_TAB_VALUE_LAP = 2;
+
     private static final Object sLock = new Object();
 
     private static Stopwatch sStopwatch;
     private static Timer sStopwatchScheduler;
 
-//    private static RemoteViews sPanelView;
-//    private static RemoteViews sHelperView;
-
-    private static Prefs sPreferences;
-    private static boolean sPreferencesChanged = false;
-
-    // Keep a reference because Timer.scheduleAtFixedRate requires so
-    @SuppressWarnings("FieldCanBeLocal")
-    private static SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener;
+    private static RemoteViews sPanelView;
+    private static RemoteViews sHelperView;
 
     private static Tab sTab = Tab.History;
+
+    private static Prefs sPreferences = null;
+
+    // Real preferences (prefs.xml)
+    // Every other pref_ should be ignored when changes
+    private static final Set<String> PREFERENCES_KEYS = new HashSet<>(
+        Arrays.asList(
+            "pref_large_display",
+            "pref_theme",
+            "pref_history",
+            "pref_laps",
+            "pref_centiseconds",
+            "pref_startstop_only"
+        )
+    );
+
+    private static final SharedPreferences.OnSharedPreferenceChangeListener sPreferencesListener =
+            new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            Logger.d(null ,TAG, "Changed: " + key);
+            if (!PREFERENCES_KEYS.contains(key))
+                return; // ignored
+
+            Logger.i(null, TAG, "Preference changed: " + key);
+            sPreferences = null; // invalidate, defer preference reloading to getPreferences()
+        }
+    };
+    private static final AtomicBoolean sInitialized = new AtomicBoolean(false);
+
+    public EdgeSinglePlusReceiver() {
+        Logger.d(null, TAG, "EdgeSinglePlusReceiver()");
+    }
 
     private enum  Tab {
         History,
@@ -105,11 +149,11 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         String action = intent.getAction();
 
         if (action == null) {
-            Logger.wtrace(context, TAG, "Invalid action onReceive");
+            Logger.wtrace(context, TAG, "Invalid onReceive action");
             return;
         }
 
-        Logger.i(context, TAG, "[" + hashCode() + "] onReceive: " + action);
+        Logger.i(context, TAG, "Handling action: " + action);
 
         int cocktailId = -1;
         Bundle extras = intent.getExtras();
@@ -117,61 +161,76 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             cocktailId = extras.getInt(EXTRA_COCKTAIL_ID);
         }
 
-        switch (action) {
-            case ACTION_START_STOPWATCH:
-                onStartStopwatch(context, cocktailId, true);
-                break;
-            case ACTION_PAUSE_STOPWATCH:
-                onPauseStopwatch(context, cocktailId);
-                break;
-            case ACTION_RESUME_STOPWATCH:
-                onStartStopwatch(context, cocktailId, false);
-                break;
-            case ACTION_LAP_STOPWATCH:
-                onLapStopwatch(context, cocktailId);
-                break;
-            case ACTION_STOP_STOPWATCH:
-                onStopStopwatch(context, cocktailId);
-                break;
-            case ACTION_RESET_STOPWATCH:
-                onResetStopwatch(context, cocktailId);
-                break;
-            case ACTION_CLEAR_LAPS:
-                onClearLaps(context, cocktailId);
-                break;
-            case ACTION_CLEAR_HISTORY:
-                onClearHistory(context, cocktailId);
-                break;
-            case ACTION_TAB_LAPS:
-                onTabLaps(context, cocktailId);
-                break;
-            case ACTION_TAB_HISTORY:
-                onTabHistory(context, cocktailId);
-                break;
-            default:
-                super.onReceive(context, intent);
-                break;
+        if (cocktailId >= 0)
+            initializeIfNeeded(context, cocktailId);
+
+        synchronized (sLock) {
+            switch (action) {
+                case ACTION_START_STOPWATCH:
+                    onStartStopwatchAction(context, cocktailId, true);
+                    break;
+                case ACTION_PAUSE_STOPWATCH:
+                    onPauseStopwatchAction(context, cocktailId);
+                    break;
+                case ACTION_RESUME_STOPWATCH:
+                    onStartStopwatchAction(context, cocktailId, false);
+                    break;
+                case ACTION_LAP_STOPWATCH:
+                    onLapStopwatchAction(context, cocktailId);
+                    break;
+                case ACTION_STOP_STOPWATCH:
+                    onStopStopwatchAction(context, cocktailId);
+                    break;
+                case ACTION_RESET_STOPWATCH:
+                    onResetStopwatchAction(context, cocktailId);
+                    break;
+                case ACTION_CLEAR_LAPS:
+                    onClearLapsAction(context, cocktailId);
+                    break;
+                case ACTION_CLEAR_HISTORY:
+                    onClearHistoryAction(context, cocktailId);
+                    break;
+                case ACTION_TAB_LAPS:
+                    onTabLapsAction(context, cocktailId);
+                    break;
+                case ACTION_TAB_HISTORY:
+                    onTabHistoryAction(context, cocktailId);
+                    break;
+                default:
+                    super.onReceive(context, intent);
+                    break;
+            }
         }
     }
 
     @Override
     public void onEnabled(Context context) {
-        Logger.i(context, TAG, "onEnabled");
+        Logger.i(context, TAG, "EdgeStopwatch enabled");
     }
 
     @Override
     public void onDisabled(Context context) {
-        Logger.i(context, TAG, "onDisabled");
+        Logger.i(context, TAG, "EdgeStopwatch disabled");
     }
 
     @Override
     public void onVisibilityChanged(Context context, int cocktailId, int visibility) {
         boolean visible = visibility == SlookCocktailManager.COCKTAIL_VISIBILITY_SHOW;
-        Logger.i(context, TAG, "onVisibilityChanged, visible = " + visible);
-        if (visible)
-            synchronized (sLock) {
-                renderCocktail(context, cocktailId);
+        Logger.i(context, TAG, "EdgeStopwatch visibility changed, visible = " + visible);
+
+        synchronized (sLock) {
+            if (visible) {
+                restoreStopwatchState(context); // do always even if already initialized, for handle corner cases
+                                                // (e.g. was paused and preference changed to start/stop only)
+                if (sStopwatch.isRunning())
+                    scheduleStopwatchUpdate(context, cocktailId);
+                int tab = PreferencesUtils.getInt(context, PREF_TAB, PREF_TAB_VALUE_NONE);
+                switchTab(context, cocktailId, tabFromInt(tab), false);
+                updateUI(context, cocktailId);
+            } else {
+                unscheduleStopwatchUpdate(context);
             }
+        }
     }
 
     @Override
@@ -182,22 +241,31 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         }
 
         int cocktailId = cocktailIds[0];
-
-        Logger.i(context, TAG, "onUpdate {" + cocktailId + "}");
+        Logger.d(context, TAG, "onUpdate cocktail {" + cocktailId + "}");
 
         synchronized (sLock) {
-            sPreferencesListener = this;
-
-            PreferenceManager
-                .getDefaultSharedPreferences(context)
-                .registerOnSharedPreferenceChangeListener(sPreferencesListener);
-
-            renderCocktail(context, cocktailId);
+            initializeIfNeeded(context, cocktailId);
+            updateUI(context, cocktailId);
         }
     }
 
-    private RemoteViews createPanelView(Context context, int cocktailId) {
-        Logger.v(context, TAG, "Creating panel view");
+    private static void initializeIfNeeded(Context context, int cocktailId) {
+        if (sInitialized.compareAndSet(false, true)) {
+            Logger.i(context, TAG, "EdgeStopwatch initialization");
+
+            PreferenceManager
+                    .getDefaultSharedPreferences(context)
+                    .registerOnSharedPreferenceChangeListener(sPreferencesListener);
+
+            restoreStopwatchState(context);
+
+            sPanelView = createPanelView(context, cocktailId);
+            sHelperView = createHelperView(context, cocktailId);
+        }
+    }
+
+    private static RemoteViews createPanelView(Context context, int cocktailId) {
+        Logger.d(context, TAG, "Creating panel view");
 
         RemoteViews panelView = new RemoteViews(
                 BuildConfig.APPLICATION_ID, R.layout.single_plus_panel_layout);
@@ -218,8 +286,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         return panelView;
     }
 
-    private RemoteViews createHelperView(Context context, int cocktailId) {
-        Logger.v(context, TAG, "Creating helper view");
+    private static RemoteViews createHelperView(Context context, int cocktailId) {
+        Logger.d(context, TAG, "Creating helper view");
 
         RemoteViews helperView = new RemoteViews(
                 BuildConfig.APPLICATION_ID, R.layout.single_plus_helper_layout);
@@ -242,7 +310,8 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
         return helperView;
     }
 
-    private void setViewAction(Context context, RemoteViews remoteView, int cocktailId, int viewId, String action) {
+    private static void setViewAction(Context context, RemoteViews remoteView,
+                                      int cocktailId, int viewId, String action) {
         Intent clickIntent = new Intent(context, EdgeSinglePlusReceiver.class);
         clickIntent.setAction(action);
         clickIntent.putExtra(EdgeSinglePlusReceiver.EXTRA_COCKTAIL_ID, cocktailId);
@@ -254,273 +323,164 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
     }
 
 
-    public void onStartStopwatch(final Context context, final int cocktailId, boolean reset) {
-        synchronized (sLock) {
-            if (sStopwatch == null) {
-                Logger.d(context, TAG, "Creating sStopwatch instance");
-                sStopwatch = new Stopwatch();
-            }
+    private static void onStartStopwatchAction(final Context context, final int cocktailId, boolean reset) {
+        Logger.i(context, TAG, "START");
 
-            if (sStopwatchScheduler == null) {
-                Logger.d(context, TAG, "Creating sStopwatchScheduler instance");
-                sStopwatchScheduler = new Timer();
-            }
-
-            if (reset) {
-                sStopwatch.reset();
-                EdgeSinglePlusLapsService.clearLaps();
-                invalidateLapsView(context, cocktailId);
-            }
-
-            sStopwatch.start();
-
-            long updateDelay = getPreferences(context).centiseconds ?
-                    UPDATE_DELAY_CENTI_SECONDS_PRECISION : UPDATE_DELAY_SECONDS_PRECISION;
-
-            sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    synchronized (sLock) {
-                        renderCocktail(context, cocktailId);
-                    }
-                }
-            }, 0, updateDelay);
-
-            renderCocktail(context, cocktailId);
-        }
-    }
-
-    public void onLapStopwatch(Context context, int cocktailId) {
-        synchronized (sLock) {
-            if (sStopwatch == null)
-            return;
-
-            long elapsed = sStopwatch.elapsed();
-            Logger.d(context, TAG, "Lap: " + elapsed + "ms");
-
-
-            if (addLap(context, elapsed)) {
-                sTab = Tab.Laps; // auto switch to LAPS tab
-                invalidateLapsView(context, cocktailId);
-            }
-
-            renderCocktail(context, cocktailId);
-        }
-    }
-
-    public void onPauseStopwatch(Context context, int cocktailId) {
-        synchronized (sLock) {
-            if (sStopwatch != null) {
-                if (!getPreferences(context).startStopOnly) {
-                    sStopwatch.pause();
-                }
-                else {
-                    Logger.w(context, TAG, "onPauseStopwatch called while startStopOnly is true");
-                }
-            } else {
-                Logger.wtrace(context, TAG, "Invalid stopwatch");
-            }
-
-            if (sStopwatchScheduler != null) {
-                sStopwatchScheduler.cancel();
-                sStopwatchScheduler.purge();
-                sStopwatchScheduler = null;
-            } else {
-                Logger.wtrace(context, TAG, "Invalid stopwatch scheduler");
-            }
-
-            renderCocktail(context, cocktailId);
-        }
-    }
-
-    public void onStopStopwatch(Context context, int cocktailId) {
-        synchronized (sLock) {
-            if (sStopwatch != null) {
-                if (getPreferences(context).startStopOnly) {
-                    sStopwatch.stop();
-
-                    if (addTime(context, sStopwatch.elapsed())) {
-                        sTab = Tab.History; // auto switch to HISTORY tab
-                        invalidateHistoryView(context, cocktailId);
-                    }
-                } else {
-                    Logger.w(context, TAG, "onStopStopwatch called while startStopOnly is false");
-                }
-            } else {
-                Logger.wtrace(context, TAG, "Invalid stopwatch");
-            }
-
-            if (sStopwatchScheduler != null) {
-                sStopwatchScheduler.cancel();
-                sStopwatchScheduler.purge();
-                sStopwatchScheduler = null;
-            } else {
-                Logger.wtrace(context, TAG, "Invalid stopwatch scheduler");
-            }
-
-            renderCocktail(context, cocktailId);
-        }
-    }
-
-    public void onResetStopwatch(Context context, int cocktailId) {
-        synchronized (sLock) {
-            if (sStopwatch != null) {
-                long elapsed = sStopwatch.elapsed();
-                sStopwatch.reset();
-
-                if (addTime(context, elapsed)) {
-                    sTab = Tab.History; // auto switch to HISTORY tab
-                    invalidateHistoryView(context, cocktailId);
-                }
-            } else {
-                Logger.wtrace(context, TAG, "Invalid stopwatch");
-            }
-
-            renderCocktail(context, cocktailId);
-        }
-    }
-
-    public void onClearLaps(Context context, int cocktailId) {
-        synchronized (sLock) {
-            EdgeSinglePlusLapsService.clearLaps();
+        if (reset) {
+            resetStopwatch(context);
+            EdgeSinglePlusLapsService.clearLaps(context);
             invalidateLapsView(context, cocktailId);
-            renderCocktail(context, cocktailId);
         }
+
+        startStopwatch(context);
+        scheduleStopwatchUpdate(context, cocktailId);
+
+        updateUI(context, cocktailId);
     }
 
-    public void onClearHistory(Context context, int cocktailId) {
-        synchronized (sLock) {
-            EdgeSinglePlusHistoryService.clearHistory(context);
+    public void onLapStopwatchAction(Context context, int cocktailId) {
+        long elapsed = sStopwatch.elapsed();
 
-            invalidateHistoryView(context, cocktailId);
-            renderCocktail(context, cocktailId);
+        Logger.i(context, TAG, "LAP: " + elapsed + "ms");
+
+        if (addLap(context, elapsed))
+            switchTab(context, cocktailId, Tab.Laps);
+
+        updateUI(context, cocktailId);
+}
+
+    public void onPauseStopwatchAction(Context context, int cocktailId) {
+        if (getPreferences(context).startStopOnly) {
+            Logger.e(context, TAG, "onPauseStopwatch called while startStopOnly is true");
+            return;
         }
+
+        Logger.i(context, TAG, "PAUSE");
+
+        pauseStopwatch(context);
+        unscheduleStopwatchUpdate(context);
+        updateUI(context, cocktailId);
     }
 
-    public void onTabLaps(Context context, int cocktailId) {
-        synchronized (sLock) {
-            sTab = Tab.Laps;
-            renderCocktail(context, cocktailId);
+    public void onStopStopwatchAction(Context context, int cocktailId) {
+        if (!getPreferences(context).startStopOnly) {
+            Logger.w(context, TAG, "onStopStopwatch called while startStopOnly is false");
+            return;
         }
+
+        Logger.i(context, TAG, "STOP");
+
+        stopStopwatch(context);
+        unscheduleStopwatchUpdate(context);
+
+        if (addTime(context, sStopwatch.elapsed()))
+            switchTab(context, cocktailId, Tab.History);
+
+        updateUI(context, cocktailId);
     }
 
-    public void onTabHistory(Context context, int cocktailId) {
-        synchronized (sLock) {
-            sTab = Tab.History;
-            renderCocktail(context, cocktailId);
-        }
+    public void onResetStopwatchAction(Context context, int cocktailId) {
+        Logger.i(context, TAG, "RESET");
+
+        long elapsed = sStopwatch.elapsed();
+        resetStopwatch(context);
+
+        if (addTime(context, elapsed))
+            switchTab(context, cocktailId, Tab.History);
+
+        updateUI(context, cocktailId);
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        synchronized (sLock) {
-            Logger.i(null, TAG, "Detected preferences change");
-            sPreferencesChanged = true;
-            // defer preference reloading to onVisibilityChange
-        }
+    public void onClearHistoryAction(Context context, int cocktailId) {
+        EdgeSinglePlusHistoryService.clearHistory(context);
+        invalidateHistoryView(context, cocktailId);
+        updateUI(context, cocktailId);
+    }
+
+    public void onClearLapsAction(Context context, int cocktailId) {
+        EdgeSinglePlusLapsService.clearLaps(context);
+        invalidateLapsView(context, cocktailId);
+        updateUI(context, cocktailId);
+    }
+
+    public void onTabHistoryAction(Context context, int cocktailId) {
+        switchTab(context, cocktailId, Tab.History);
+        updateUI(context, cocktailId);
+    }
+
+    public void onTabLapsAction(Context context, int cocktailId) {
+        switchTab(context, cocktailId, Tab.Laps);
+        updateUI(context, cocktailId);
     }
 
     private boolean addTime(Context context, long time) {
-        if (getPreferences(context).history) {
-            EdgeSinglePlusHistoryService.addHistoryTime(context, time);
-            return true;
-        }
-        return false;
+        if (!getPreferences(context).history)
+            return false;
+
+        EdgeSinglePlusHistoryService.addHistoryTime(context, time);
+        return true;
     }
 
     private boolean addLap(Context context, long time) {
-        if (getPreferences(context).laps) {
-            EdgeSinglePlusLapsService.addLap(time);
-            return true;
-        }
-        return false;
+        if (!getPreferences(context).laps)
+            return false;
+
+        EdgeSinglePlusLapsService.addLap(context, time);
+        return true;
     }
 
     private static Prefs getPreferences(Context context) {
-        synchronized (sLock) {
-            if (sPreferences == null || sPreferencesChanged) {
-                Logger.d(context, TAG, "Reloading and caching preferences");
-                sPreferencesChanged = false;
-                sPreferences = reloadPreferences(context);
-            }
+        if (sPreferences == null) {
+            Logger.d(context, TAG, "Reloading preferences");
 
-            return sPreferences;
+            sPreferences = new Prefs();
+
+            sPreferences.largeDisplay = PreferencesUtils.getBool(context,
+                    R.string.pref_large_display_key, R.bool.pref_large_display_default_value);
+            sPreferences.history = PreferencesUtils.getBool(context,
+                    R.string.pref_history_key, R.bool.pref_history_default_value);
+            sPreferences.laps = PreferencesUtils.getBool(context,
+                    R.string.pref_laps_key, R.bool.pref_large_display_default_value);
+            sPreferences.startStopOnly = PreferencesUtils.getBool(context,
+                    R.string.pref_startstop_only_key, R.bool.pref_startstop_only_default_value);
+            sPreferences.centiseconds = PreferencesUtils.getBool(context,
+                    R.string.pref_centiseconds_key, R.bool.pref_centiseconds_default_value);
+            sPreferences.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
+                    R.string.pref_theme_key, R.string.pref_theme_default_value));
+
+            Logger.i(context, TAG, "Preference 'Large display' = " + sPreferences.largeDisplay);
+            Logger.i(context, TAG, "Preference 'History' = " + sPreferences.history);
+            Logger.i(context, TAG, "Preference 'Laps' = " + sPreferences.laps);
+            Logger.i(context, TAG, "Preference 'Start/Stop only' = " + sPreferences.startStopOnly);
+            Logger.i(context, TAG, "Preference 'Theme' = " + sPreferences.theme);
         }
+
+        return sPreferences;
     }
 
-    private static Prefs reloadPreferences(Context context) {
-        Prefs prefs = new Prefs();
-
-        prefs.largeDisplay = PreferencesUtils.getBool(context,
-                R.string.pref_large_display_key, R.bool.pref_large_display_default_value);
-        prefs.history = PreferencesUtils.getBool(context,
-                R.string.pref_history_key, R.bool.pref_history_default_value);
-        prefs.laps = PreferencesUtils.getBool(context,
-                R.string.pref_laps_key, R.bool.pref_large_display_default_value);
-        prefs.startStopOnly = PreferencesUtils.getBool(context,
-                R.string.pref_startstop_only_key, R.bool.pref_startstop_only_default_value);
-        prefs.centiseconds = PreferencesUtils.getBool(context,
-                R.string.pref_centiseconds_key, R.bool.pref_centiseconds_default_value);
-        prefs.theme = Prefs.Theme.fromValue(PreferencesUtils.getString(context,
-                R.string.pref_theme_key, R.string.pref_theme_default_value));
-
-        Logger.i(context, TAG, "Large display: " + prefs.largeDisplay);
-        Logger.i(context, TAG, "History: " + prefs.history);
-        Logger.i(context, TAG, "Laps: " + prefs.laps);
-        Logger.i(context, TAG, "Start/Stop only: " + prefs.startStopOnly);
-        Logger.i(context, TAG, "Theme: " + prefs.theme);
-
-        return prefs;
+    private static void updateUI(Context context, int cocktailId) {
+        updateUI(context, cocktailId, false);
     }
 
-    private void renderCocktail(Context context, int cocktailId) {
-        // Reload preference if those are changed
+    private static void updateUI(Context context, int cocktailId, boolean timeOnly) {
         Prefs prefs = getPreferences(context);
 
         // Detect current state
-        Stopwatch.State state;
-        TimeUtils.Timesnap timesnap;
+        Stopwatch.State state = sStopwatch.state;
+        Timesnap timesnap = new Timesnap(sStopwatch.elapsed());
 
-        if (sStopwatch != null) {
-            state = sStopwatch.getState();
-            timesnap = new TimeUtils.Timesnap(sStopwatch.elapsed());
-        } else  {
-            state = Stopwatch.State.None;
-            timesnap = new TimeUtils.Timesnap(0);
-        }
-
-        // Create views, if needed
-        // ^^ This would be ideal, but for some reason something freezes
-        // if we try to avoid to recreate the views each time
-        /*
-        if (sPanelView == null) {
-            sPanelView = createPanelView(context, cocktailId);
-        }
-
-        if (sHelperView == null) {
-            sHelperView = createHelperView(context, cocktailId);
-        }
-        */
-        RemoteViews sPanelView = createPanelView(context, cocktailId);
-        RemoteViews sHelperView = createHelperView(context, cocktailId);
+        String displayTime = prefs.centiseconds ?
+                timesnap.toMinutesSecondsCentiseconds() :
+                timesnap.toMinutesSeconds();
+        Logger.v(context, TAG, "updateUI: " + state + ": " + displayTime);
 
         // Update UI: display
         if (!prefs.largeDisplay) {
             // inline
-            sPanelView.setViewVisibility(R.id.displayInlineText, View.VISIBLE);
-            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.GONE);
-
-            String displayTime = prefs.centiseconds ?
-                    timesnap.toMinutesSecondsCentiseconds() :
-                    timesnap.toMinutesSeconds();
-
             sPanelView.setTextViewText(R.id.displayInlineText, displayTime);
         }
         else {
             // multiline
-            sPanelView.setViewVisibility(R.id.displayInlineText, View.GONE);
-            sPanelView.setViewVisibility(R.id.displayMultilineContainer, View.VISIBLE);
-
             if (timesnap.minutes > 0) {
                 sPanelView.setViewVisibility(R.id.displayLargeMinutesLineText, View.VISIBLE);
                 sPanelView.setTextViewText(R.id.displayLargeMinutesLineText,
@@ -540,119 +500,285 @@ public class EdgeSinglePlusReceiver extends SlookCocktailProvider implements Sha
             } else {
                 sPanelView.setViewVisibility(R.id.displayLargeCentisLineText, View.GONE);
             }
-
         }
 
+        // Do all the the necessary control and visibility changes only for major changes.
+        // (skipped for the periodically scheduled updateUI task)
+        if (!timeOnly) {
+            // Update UI: display visibility
+            sPanelView.setViewVisibility(R.id.displayInlineText,
+                    prefs.largeDisplay ? View.GONE : View.VISIBLE);
+            sPanelView.setViewVisibility(R.id.displayMultilineContainer,
+                    prefs.largeDisplay ? View.VISIBLE : View.GONE);
 
-        // Update UI: buttons container
-        sPanelView.setViewVisibility(R.id.notRunningButtons,
-                state == Stopwatch.State.None ? View.VISIBLE : View.GONE);
-        sPanelView.setViewVisibility(R.id.runningButtons,
-                state == Stopwatch.State.Running ? View.VISIBLE : View.GONE);
-        sPanelView.setViewVisibility(R.id.pausedButtons,
-                state == Stopwatch.State.Paused ? View.VISIBLE : View.GONE);
+            // Update UI: buttons container
+            sPanelView.setViewVisibility(R.id.notRunningButtons,
+                    state == Stopwatch.State.None ? View.VISIBLE : View.GONE);
+            sPanelView.setViewVisibility(R.id.runningButtons,
+                    state == Stopwatch.State.Running ? View.VISIBLE : View.GONE);
+            sPanelView.setViewVisibility(R.id.pausedButtons,
+                    state == Stopwatch.State.Paused ? View.VISIBLE : View.GONE);
 
-        // Update UI: start/stop only?
-        if (prefs.startStopOnly) {
-            sPanelView.setViewVisibility(R.id.resumeButton, View.GONE);
-            sPanelView.setViewVisibility(R.id.resetButton, View.GONE);
-            sPanelView.setViewVisibility(R.id.pauseButton, View.GONE);
-            sPanelView.setViewVisibility(R.id.stopButton, View.VISIBLE);
-        } else {
-            sPanelView.setViewVisibility(R.id.resumeButton, View.VISIBLE);
-            sPanelView.setViewVisibility(R.id.resetButton, View.VISIBLE);
-            sPanelView.setViewVisibility(R.id.pauseButton, View.VISIBLE);
-            sPanelView.setViewVisibility(R.id.stopButton, View.GONE);
-        }
+            // Update UI: start/stop only?
+            if (prefs.startStopOnly) {
+                sPanelView.setViewVisibility(R.id.resumeButton, View.GONE);
+                sPanelView.setViewVisibility(R.id.resetButton, View.GONE);
+                sPanelView.setViewVisibility(R.id.pauseButton, View.GONE);
+                sPanelView.setViewVisibility(R.id.stopButton, View.VISIBLE);
+            } else {
+                sPanelView.setViewVisibility(R.id.resumeButton, View.VISIBLE);
+                sPanelView.setViewVisibility(R.id.resetButton, View.VISIBLE);
+                sPanelView.setViewVisibility(R.id.pauseButton, View.VISIBLE);
+                sPanelView.setViewVisibility(R.id.stopButton, View.GONE);
+            }
 
-        // Update UI: theme
-        int textColor;
-        int panelUpperColorRes;
-        int panelLowerColorRes;
+            // Update UI: theme
+            int textColor;
+            int panelUpperColorRes;
+            int panelLowerColorRes;
 
-        if (prefs.theme == Prefs.Theme.Light) {
-            textColor = ResourcesUtils.getColor(context, R.color.colorTextDark);
-            panelUpperColorRes = R.color.colorLightBackground;
-            panelLowerColorRes = R.color.colorLightBackgroundLighter;
-        } else {
-            textColor = ResourcesUtils.getColor(context, R.color.colorTextLight);
-            panelUpperColorRes = R.color.colorDarkBackground;
-            panelLowerColorRes = R.color.colorDarkBackgroundLighter;
-        }
+            if (prefs.theme == Prefs.Theme.Light) {
+                textColor = ResourcesUtils.getColor(context, R.color.colorTextDark);
+                panelUpperColorRes = R.color.colorLightBackground;
+                panelLowerColorRes = R.color.colorLightBackgroundLighter;
+            } else {
+                textColor = ResourcesUtils.getColor(context, R.color.colorTextLight);
+                panelUpperColorRes = R.color.colorDarkBackground;
+                panelLowerColorRes = R.color.colorDarkBackgroundLighter;
+            }
 
-        sPanelView.setInt(R.id.panelUpperContainer, "setBackgroundResource", panelUpperColorRes);
-        sPanelView.setInt(R.id.panelLowerContainer, "setBackgroundResource", panelLowerColorRes);
-        sPanelView.setTextColor(R.id.displayInlineText, textColor);
-        sPanelView.setTextColor(R.id.displayLargeSecondsLineText, textColor);
-        sPanelView.setTextColor(R.id.displayLargeMinutesLineText, textColor);
-        sPanelView.setTextColor(R.id.displayLargeCentisLineText, textColor);
+            sPanelView.setInt(R.id.panelUpperContainer, "setBackgroundResource", panelUpperColorRes);
+            sPanelView.setInt(R.id.panelLowerContainer, "setBackgroundResource", panelLowerColorRes);
+            sPanelView.setTextColor(R.id.displayInlineText, textColor);
+            sPanelView.setTextColor(R.id.displayLargeSecondsLineText, textColor);
+            sPanelView.setTextColor(R.id.displayLargeMinutesLineText, textColor);
+            sPanelView.setTextColor(R.id.displayLargeCentisLineText, textColor);
 
-        // Update UI: helper/tabs
-        boolean lapsIsFilled = prefs.laps && EdgeSinglePlusLapsService.getLapsCount() > 0;
-        boolean historyIsFilled = prefs.history && EdgeSinglePlusHistoryService.getHistoryCount(context) > 0;
-        int tabsEnabledCount = (prefs.laps ? 1 : 0) + (prefs.history ? 1 : 0);
-        int tabsFilledCount = (lapsIsFilled ? 1 : 0) + (historyIsFilled ? 1 : 0);
+            // Update UI: helper/tabs
+            boolean lapsIsFilled = prefs.laps && EdgeSinglePlusLapsService.getLapsCount(context) > 0;
+            boolean historyIsFilled = prefs.history && EdgeSinglePlusHistoryService.getHistoryCount(context) > 0;
+            int tabsEnabledCount = (prefs.laps ? 1 : 0) + (prefs.history ? 1 : 0);
+            int tabsFilledCount = (lapsIsFilled ? 1 : 0) + (historyIsFilled ? 1 : 0);
 
-        sHelperView.setViewVisibility(R.id.helperContainer, tabsFilledCount > 0 ? View.VISIBLE : View.GONE);
-        sHelperView.setViewVisibility(R.id.tabsDivider, tabsEnabledCount > 1 ? View.VISIBLE : View.GONE);
+            sHelperView.setViewVisibility(R.id.helperContainer, tabsFilledCount > 0 ? View.VISIBLE : View.GONE);
+            sHelperView.setViewVisibility(R.id.tabsDivider, tabsEnabledCount > 1 ? View.VISIBLE : View.GONE);
 
-        // Update UI: laps
-        if (prefs.laps) {
-            sPanelView.setViewVisibility(R.id.lapButton, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.lapsList, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.VISIBLE);
-        } else {
-            sPanelView.setViewVisibility(R.id.lapButton, View.GONE);
-            sHelperView.setViewVisibility(R.id.lapsList, View.GONE);
-            sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
-            sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.GONE);
-        }
+            // Update UI: laps
+            if (prefs.laps) {
+                sPanelView.setViewVisibility(R.id.lapButton, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.lapsList, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.VISIBLE);
+            } else {
+                sPanelView.setViewVisibility(R.id.lapButton, View.GONE);
+                sHelperView.setViewVisibility(R.id.lapsList, View.GONE);
+                sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
+                sHelperView.setViewVisibility(R.id.helperTabLapsHeader, View.GONE);
+            }
 
-        // Update UI: history
-        if (prefs.history) {
-            sHelperView.setViewVisibility(R.id.historyList, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.VISIBLE);
-        } else {
-            sHelperView.setViewVisibility(R.id.historyList, View.GONE);
-            sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
-            sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.GONE);
-        }
+            // Update UI: history
+            if (prefs.history) {
+                sHelperView.setViewVisibility(R.id.historyList, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.VISIBLE);
+            } else {
+                sHelperView.setViewVisibility(R.id.historyList, View.GONE);
+                sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
+                sHelperView.setViewVisibility(R.id.helperTabHistoryHeader, View.GONE);
+            }
 
-        // Update UI: tab
-        // Ensure the tab is appropriate
-        if (sTab == Tab.History && !prefs.history)
-            sTab = Tab.Laps;
-        if (sTab == Tab.Laps && !prefs.laps)
-            sTab = Tab.History;
+            // Update UI: tab
+            // Ensure the tab is feasible
+            if (sTab == Tab.History && !prefs.history)
+                sTab = Tab.Laps;
+            if (sTab == Tab.Laps && !prefs.laps)
+                sTab = Tab.History;
 
-        if (sTab == Tab.History) {
-            sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
-            sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
-            sHelperView.setTextColor(R.id.helperTabHistoryHeader,
-                    ResourcesUtils.getColor(context, R.color.colorAccent));
-            sHelperView.setTextColor(R.id.helperTabLapsHeader,
-                    ResourcesUtils.getColor(context, R.color.colorTextMid));
-        } else if (sTab == Tab.Laps) {
-            sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
-            sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
-            sHelperView.setTextColor(R.id.helperTabHistoryHeader,
-                    ResourcesUtils.getColor(context, R.color.colorTextMid));
-            sHelperView.setTextColor(R.id.helperTabLapsHeader,
-                    ResourcesUtils.getColor(context, R.color.colorAccent));
-        } else {
-            Logger.w(context, TAG, "Unknown tab mode: " + sTab);
+            if (sTab == Tab.History && prefs.history) {
+                sHelperView.setViewVisibility(R.id.historyContainer, View.VISIBLE);
+                sHelperView.setViewVisibility(R.id.lapsContainer, View.GONE);
+                sHelperView.setTextColor(R.id.helperTabHistoryHeader,
+                        ResourcesUtils.getColor(context, R.color.colorAccent));
+                sHelperView.setTextColor(R.id.helperTabLapsHeader,
+                        ResourcesUtils.getColor(context, R.color.colorTextMid));
+            } else if (sTab == Tab.Laps && prefs.laps) {
+                sHelperView.setViewVisibility(R.id.historyContainer, View.GONE);
+                sHelperView.setViewVisibility(R.id.lapsContainer, View.VISIBLE);
+                sHelperView.setTextColor(R.id.helperTabHistoryHeader,
+                        ResourcesUtils.getColor(context, R.color.colorTextMid));
+                sHelperView.setTextColor(R.id.helperTabLapsHeader,
+                        ResourcesUtils.getColor(context, R.color.colorAccent));
+            }
         }
 
         SlookCocktailManager.getInstance(context).updateCocktail(cocktailId, sPanelView, sHelperView);
     }
 
-    private void invalidateLapsView(Context context, int cocktailId) {
+    private static void startStopwatch(final Context context) {
+        sStopwatch.start();
+        saveStopwatchState(context);
+    }
+
+    private static void pauseStopwatch(final Context context) {
+        sStopwatch.pause();
+        saveStopwatchState(context);
+    }
+
+    private static void stopStopwatch(final Context context) {
+        sStopwatch.stop();
+        saveStopwatchState(context);
+    }
+
+    private static void resetStopwatch(final Context context) {
+        sStopwatch.reset();
+        saveStopwatchState(context);
+    }
+
+    private static int stopwatchStateToInt(Stopwatch.State state) {
+        switch (state) {
+                case None:
+                    return PREF_STATE_VALUE_NONE;
+                case Running:
+                    return PREF_STATE_VALUE_RUNNING;
+                case Paused:
+                    return PREF_STATE_VALUE_PAUSED;
+            }
+        return PREF_STATE_VALUE_NONE;
+    }
+
+    private static Stopwatch.State stopwatchStateFromInt(int state) {
+        switch (state) {
+                case PREF_STATE_VALUE_NONE:
+                    return Stopwatch.State.None;
+                case PREF_STATE_VALUE_RUNNING:
+                    return Stopwatch.State.Running;
+                case PREF_STATE_VALUE_PAUSED:
+                    return Stopwatch.State.Paused;
+            }
+        return Stopwatch.State.None;
+    }
+
+    private static Tab tabFromInt(int tab) {
+        switch (tab) {
+            case PREF_TAB_VALUE_HISTORY:
+                return Tab.History;
+            case PREF_TAB_VALUE_LAP:
+                return Tab.Laps;
+        }
+        return Tab.History;
+    }
+
+    private static int tabToInt(Tab tab) {
+        switch (tab) {
+            case History:
+                return PREF_TAB_VALUE_HISTORY;
+            case Laps:
+                return PREF_TAB_VALUE_LAP;
+        }
+        return PREF_TAB_VALUE_HISTORY;
+    }
+
+    private static void saveStopwatchState(final Context context) {
+        // Since low memory killer can kill the app when in background,
+        // store the stopwatch state and restore it later if we get killed.
+        // Futhermore the state is saved even when the app is no more visible,
+        // in order to suspend to timer while in background (avoiding to get killed)
+        int state = PREF_STATE_VALUE_NONE;
+        long startTime = 0;
+        long savedAmount = 0;
+
+        if (sStopwatch != null) {
+            state = stopwatchStateToInt(sStopwatch.state);
+            savedAmount = sStopwatch.savedAmount;
+            startTime = sStopwatch.startTime;
+        }
+
+        PreferencesUtils.getWriter(context)
+                .putInt(PREF_STATE, state)
+                .putLong(PREF_STOPWATCH_START_TIME, startTime)
+                .putLong(PREF_STOPWATCH_SAVED_TIME_AMOUNT, savedAmount)
+                .apply();
+    }
+
+    private static void restoreStopwatchState(final Context context) {
+        Stopwatch.State state = stopwatchStateFromInt(PreferencesUtils.getInt(context, PREF_STATE));
+
+        if (state != Stopwatch.State.None) {
+            // Restore start time and save amount from storage
+            long startTime = PreferencesUtils.getLong(context, PREF_STOPWATCH_START_TIME);
+            long savedAmount = PreferencesUtils.getLong(context, PREF_STOPWATCH_SAVED_TIME_AMOUNT);
+
+            Logger.i(context, TAG, "Restoring stopwatch state (" +
+                state + ", startTime = " + startTime + ", savedAmount = " + savedAmount + ")");
+
+            sStopwatch = new Stopwatch(state, startTime, savedAmount);
+        }
+
+        if (state == Stopwatch.State.None ||
+            state == Stopwatch.State.Paused && getPreferences(context).startStopOnly) {
+            Logger.i(context, TAG, "Initializing default stopwatch (nothing to restore)");
+            sStopwatch = new Stopwatch();
+        }
+    }
+
+    private static void scheduleStopwatchUpdate(final Context context, final int cocktailId) {
+        Logger.i(context, TAG, "Starting stopwatch UI updater");
+        long updateDelay = getPreferences(context).centiseconds ?
+                UPDATE_DELAY_CENTI_SECONDS_PRECISION : UPDATE_DELAY_SECONDS_PRECISION;
+
+        unscheduleStopwatchUpdate(context);
+        sStopwatchScheduler = new Timer();
+        sStopwatchScheduler.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                synchronized (sLock) {
+                    updateUI(context, cocktailId, true);
+                }
+            }
+        }, 0, updateDelay);
+    }
+
+    private static void unscheduleStopwatchUpdate(final Context context) {
+        Logger.i(context, TAG, "Stopping stopwatch UI updater");
+        if (sStopwatchScheduler != null) {
+            sStopwatchScheduler.cancel();
+            sStopwatchScheduler.purge();
+            sStopwatchScheduler = null;
+        }
+    }
+
+    private static void switchTab(Context context, int cocktailId, Tab tab) {
+        switchTab(context, cocktailId, tab, true);
+    }
+
+    private static void switchTab(Context context, int cocktailId, Tab tab, boolean invalidate) {
+        Prefs prefs = getPreferences(context);
+
+        if (tab == Tab.History && !prefs.history)
+            tab = Tab.Laps; // attempt
+        if (tab == Tab.Laps && !prefs.laps)
+            tab = Tab.History; // attempt
+        if (tab == Tab.History && !prefs.history) {
+            return;
+        }
+
+        PreferencesUtils.setInt(context, PREF_TAB, tabToInt(tab));
+        sTab = tab;
+        if (invalidate) {
+            if (tab == Tab.History)
+                invalidateHistoryView(context, cocktailId);
+            else if (tab == Tab.Laps)
+                invalidateLapsView(context, cocktailId);
+        }
+    }
+
+    private static void invalidateHistoryView(Context context, int cocktailId) {
+        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.historyList);
+    }
+
+    private static void invalidateLapsView(Context context, int cocktailId) {
         SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.lapsList);
     }
 
-    private void invalidateHistoryView(Context context, int cocktailId) {
-        SlookCocktailManager.getInstance(context).notifyCocktailViewDataChanged(cocktailId, R.id.historyList);
-    }
+
 }

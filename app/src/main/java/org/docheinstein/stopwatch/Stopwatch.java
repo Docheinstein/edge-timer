@@ -8,60 +8,61 @@ public class Stopwatch {
         Paused
     }
 
-    private long mStart;
-    private long mSavedAmount;
-    private State mState;
+    public State state;
+    public long startTime;
+    public long savedAmount;
+
+    public Stopwatch(State state, long startTime, long savedAmount) {
+        this.state = state;
+        this.startTime = startTime;
+        this.savedAmount = savedAmount;
+    }
 
     public Stopwatch() {
-        mSavedAmount = 0;
-        mState = State.None;
+        this(State.None, 0, 0);
     }
 
     public void start() {
         if (!isRunning()) {
-            mStart = System.currentTimeMillis();
-            mState = State.Running;
+            startTime = System.currentTimeMillis();
+            state = State.Running;
         }
     }
 
     public void pause() {
         if (isRunning()) {
-            mSavedAmount = elapsed();
-            mState = State.Paused;
+            savedAmount = elapsed();
+            state = State.Paused;
         }
     }
 
     public void stop() {
         if (isRunning()) {
-            mSavedAmount = elapsed();
-            mState = State.None;
+            savedAmount = elapsed();
+            state = State.None;
         }
     }
 
     public void reset() {
-        mSavedAmount = 0;
-        mStart = System.currentTimeMillis();
+        savedAmount = 0;
+        startTime = System.currentTimeMillis();
         /*
         *   [None => None]
-        *   Running => Running
+        *   Running => Running (continue to run, resetting saved amount)
         *   Paused => None
         **/
-        if (mState == State.Paused)
-            mState = State.None;
+        if (state == State.Paused)
+            state = State.None;
     }
 
     public long elapsed() {
-        long amount = mSavedAmount;
+        long amount = savedAmount;
         if (isRunning())
-            amount += System.currentTimeMillis() - mStart;
+            amount += System.currentTimeMillis() - startTime;
         return amount;
     }
 
     public boolean isRunning() {
-        return mState == State.Running;
-    }
-
-    public State getState() {
-        return mState;
+        return state == State.Running;
     }
 }
